@@ -1,6 +1,6 @@
+// AuthPage.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
-
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
@@ -8,33 +8,26 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   // LOGIN
   const handleLogin = async e => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-
+    
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setErrorMessage('Email i pavlefshëm.');
       setLoading(false);
       return;
     }
     if (password.length < 6) {
-      setErrorMessage('Password duhet të ketë të paktën 6 karaktere.');
       setLoading(false);
       return;
     }
 
     try {
       const response = await axios.post('http://localhost:8000/api/login', { email, password }, { withCredentials: true });
-      setSuccessMessage('Login me sukses!');
       console.log(response.data);
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Login dështoi.');
+      console.log(error.response?.data?.message || 'Login dështoi.');
     } finally {
       setLoading(false);
     }
@@ -44,26 +37,20 @@ const AuthPage = () => {
   const handleRegister = async e => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
 
     if (!name.trim()) {
-      setErrorMessage('Ju lutem shkruani emrin.');
       setLoading(false);
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setErrorMessage('Email i pavlefshëm.');
       setLoading(false);
       return;
     }
     if (password.length < 6) {
-      setErrorMessage('Password duhet të ketë të paktën 6 karaktere.');
       setLoading(false);
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage('Fjalëkalimet nuk përputhen.');
       setLoading(false);
       return;
     }
@@ -75,12 +62,11 @@ const AuthPage = () => {
         password, 
         password_confirmation: confirmPassword 
       });
-      setSuccessMessage('Regjistrimi me sukses!');
       console.log(response.data);
       setIsLogin(true);
       resetFields();
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Regjistrimi dështoi.');
+      console.log(error.response?.data?.message || 'Regjistrimi dështoi.');
     } finally {
       setLoading(false);
     }
@@ -149,9 +135,6 @@ const AuthPage = () => {
               />
             </div>
           )}
-
-          {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
-          {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
           <div className="d-grid gap-2">
             <button className={`btn ${isLogin ? 'btn-primary' : 'btn-success'}`} disabled={loading}>
