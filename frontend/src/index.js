@@ -1,12 +1,21 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.js'
-import './index.css'
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Navbar from './Navbar';
+import Hero from './Hero';
+import BookingForm from './BookingForm';
+import RoomsAndSuites from './RoomsAndSuites';
+import React from 'react';
+import AuthPage from './AuthPage';
 
+function App() {
+  return (
+    <div className="App">
+      <Navbar />
+      <Hero />
+      <BookingForm />
+      <RoomsAndSuites />
+      <AuthPage />
+    </div>
+  );
+}
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-) 
+export default App;

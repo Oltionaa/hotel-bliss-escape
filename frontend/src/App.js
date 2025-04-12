@@ -1,19 +1,9 @@
+import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Navbar from './Navbar';
-import Hero from './Hero';
-import BookingForm from './BookingForm';
-import RoomsAndSuites from './RoomsAndSuites';
+import AuthPage from './AuthPage';
 
 function App() {
-  return (
-    <div className="App">
-      <Navbar />
-      <Hero />
-      <BookingForm />
-      <RoomsAndSuites />
-    </div>
-  );
+  return <AuthPage />;
 }
 
 export default App;
-
