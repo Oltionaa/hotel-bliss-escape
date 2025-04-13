@@ -1,7 +1,7 @@
-// AuthPage.jsx
+
 import React, { useState } from 'react';
 import axios from 'axios';
-const AuthPage = () => {
+const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -137,7 +137,7 @@ const AuthPage = () => {
           )}
 
           <div className="d-grid gap-2">
-            <button className={`btn ${isLogin ? 'btn-primary' : 'btn-success'}`} disabled={loading}>
+            <button className={`btn ${isLogin ? 'btn-btn btn-dark' : 'btn-btn btn-dark'}`} disabled={loading}>
               {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
             </button>
           </div>
@@ -156,4 +156,4 @@ const AuthPage = () => {
   );
 };
 
-export default AuthPage;
+export default Login;
