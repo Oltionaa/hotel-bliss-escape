@@ -27,7 +27,7 @@ function BookingForm() {
             </select>
           </div>
           <div className="col-md d-flex align-items-end">
-          <button className="btn btn-dark">Book Now</button>
+          <button className="btn btn-dark">Check Now</button>
 
 
 
