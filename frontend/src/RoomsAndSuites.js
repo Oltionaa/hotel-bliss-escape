@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';  // Shto importin e Link
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const rooms = [
@@ -26,16 +27,12 @@ const rooms = [
     price: 389,
     image: "https://i.pinimg.com/736x/9e/6c/d2/9e6cd290af807e41ecf11ab96b8151dc.jpg"
   },
-  // Affordable rooms added here:
   {
     title: "Standard Room",
     description: "Comfortable and cozy with all the basic amenities for a relaxing stay.",
     size: "30M2",
     people: 2,
     price: 120,
-
-
-   
     image: "https://i.pinimg.com/736x/2c/7e/f6/2c7ef61082c3e749b5939228d40d04cd.jpg"
   },
   {
@@ -75,7 +72,15 @@ export default function RoomsAndSuites() {
                 </div>
                 <h5 className="card-title">{room.title}</h5>
                 <p className="card-text">{room.description}</p>
-                <a href="#" className="btn btn-dark w-100">BOOK NOW FROM ${room.price}</a>
+                {/* Përdor Link për navigim te faqja e pagesave */}
+                <Link 
+                  to="/payments" 
+                  className="btn btn-dark w-100"
+                  // Opsionale: Kalimi i të dhënave për pagesë si query param (p.sh. price, room title)
+                  // to={`/payments?price=${room.price}&title=${encodeURIComponent(room.title)}`}
+                >
+                  BOOK NOW FROM ${room.price}
+                </Link>
               </div>
             </div>
           </div>
@@ -84,7 +89,6 @@ export default function RoomsAndSuites() {
     </div>
   );
 }
-
 
 
 
