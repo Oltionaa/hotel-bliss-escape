@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import axios from 'axios';
+
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
@@ -8,49 +8,57 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // LOGIN
-  const handleLogin = async e => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Email është i pavlefshëm.');
       setLoading(false);
       return;
     }
     if (password.length < 6) {
+      setError('Fjalëkalimi duhet të jetë të paktën 6 karaktere.');
       setLoading(false);
       return;
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/api/login', { email, password }, { withCredentials: true });
-      console.log(response.data);
+      const response = await axios.post('http://localhost:8000/api/login', { email, password });
+      console.log(response.data); 
     } catch (error) {
-      console.log(error.response?.data?.message || 'Login dështoi.');
+      setError(error.response?.data?.message || 'Login dështoi.');
     } finally {
       setLoading(false);
     }
   };
 
   // REGISTER
-  const handleRegister = async e => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     if (!name.trim()) {
+      setError('Emri është i nevojshëm.');
       setLoading(false);
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Email është i pavlefshëm.');
       setLoading(false);
       return;
     }
     if (password.length < 6) {
+      setError('Fjalëkalimi duhet të jetë të paktën 6 karaktere.');
       setLoading(false);
       return;
     }
     if (password !== confirmPassword) {
+      setError('Fjalëkalimi dhe konfirmimi i fjalëkalimit nuk përputhen.');
       setLoading(false);
       return;
     }
@@ -66,7 +74,7 @@ const Login = () => {
       setIsLogin(true);
       resetFields();
     } catch (error) {
-      console.log(error.response?.data?.message || 'Regjistrimi dështoi.');
+      setError(error.response?.data?.message || 'Regjistrimi dështoi.');
     } finally {
       setLoading(false);
     }
@@ -92,7 +100,7 @@ const Login = () => {
                 className="form-control"
                 placeholder="Enter your name"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
@@ -105,7 +113,7 @@ const Login = () => {
               className="form-control"
               placeholder="Enter your email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -117,7 +125,7 @@ const Login = () => {
               className="form-control"
               placeholder="Enter your password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
@@ -130,14 +138,16 @@ const Login = () => {
                 className="form-control"
                 placeholder="Confirm your password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
             </div>
           )}
 
+          {error && <div className="alert alert-danger">{error}</div>}
+
           <div className="d-grid gap-2">
-            <button className={`btn ${isLogin ? 'btn-btn btn-dark' : 'btn-btn btn-dark'}`} disabled={loading}>
+            <button className="btn btn-dark" disabled={loading}>
               {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
             </button>
           </div>
