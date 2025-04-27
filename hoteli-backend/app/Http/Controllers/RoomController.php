@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -7,16 +6,32 @@ use App\Models\Room;
 
 class RoomController extends Controller
 {
-    public function availableRooms(Request $request)
+    public function search(Request $request)
     {
-        $checkIn = $request->check_in;
-        $checkOut = $request->check_out;
-        $adults = $request->adults;
-        $kids = $request->kids;
-        $totalPeople = $adults + $kids;
+        $capacity = $request->input('capacity');
+        $date = $request->input('date');
 
-        $rooms = Room::where('people', '>=', $totalPeople)->get();
+        if (empty($capacity) || empty($date)) {
+            return response()->json(['error' => 'Të dhënat mungojnë'], 400);
+        }
 
+        \Log::info('Kërkohet me: ', ['capacity' => $capacity, 'date' => $date]);
+
+        $rooms = Room::where('capacity', '>=', $capacity)
+            ->whereDoesntHave('reservations', function ($query) use ($date) {
+                $query->where(function ($q) use ($date) {
+                    $q->where('check_in', '<=', $date)
+                      ->where('check_out', '>=', $date);
+                });
+            })
+            ->get();
         return response()->json($rooms);
     }
+    
+    public function index()
+    {
+    $rooms = Room::all();  
+    return view('rooms.index', compact('rooms'));  
+    }
+
 }
