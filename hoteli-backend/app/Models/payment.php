@@ -10,14 +10,12 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        "reservation_id",
-        "cardholder",
-        "bank_name",
-        "card_number",
-        "card_type",
-        "cvv",
+        'reservation_id',
+        'amount',
+        'paid_at',
     ];
 
+    // Opsionale: marrëdhënia me rezervimin
     public function reservation()
     {
         return $this->belongsTo(Reservation::class);
