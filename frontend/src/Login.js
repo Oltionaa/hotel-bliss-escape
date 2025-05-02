@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Importo useNavigate nga react-router-dom
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,12 +10,13 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate(); // Inizializohet useNavigate për navigim
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Email është i pavlefshëm.');
       setLoading(false);
@@ -28,7 +30,12 @@ const Login = () => {
 
     try {
       const response = await axios.post('http://localhost:8000/api/login', { email, password });
-      console.log(response.data); 
+      // Ruajmë userId në localStorage pas login-it
+      localStorage.setItem('userId', response.data.userId);
+      console.log(response.data);
+
+      // Pasi login është i suksesshëm, drejto në faqen kryesore
+      navigate('/'); // Kthehu në faqen kryesore
     } catch (error) {
       setError(error.response?.data?.message || 'Login dështoi.');
     } finally {

@@ -17,5 +17,9 @@ Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 
 Route::post('/book-room', [ReservationController::class, 'bookRoom']);
 Route::post('/reservations', [ReservationController::class, 'store']);
+<<<<<<< HEAD
 Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
 Route::post("/checkout", [RoomController::class, "checkout"]);
+=======
+Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
+>>>>>>> 7939a173dd73ea95795fb154841479ed00e5f408

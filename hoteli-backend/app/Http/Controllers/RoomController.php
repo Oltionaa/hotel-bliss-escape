@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class RoomController extends Controller
-{
-    public function search(Request $request)
+{public function search(Request $request)
     {
+<<<<<<< HEAD
         try {
             $capacity = $request->input("capacity");
             $checkIn = $request->input("date");
@@ -136,6 +136,39 @@ class RoomController extends Controller
         }
     }
 
+=======
+        $capacity = $request->input('capacity');
+        $checkIn = $request->input('date'); // kjo është check-in
+        $checkOut = $request->input('checkOutDate'); // kjo duhet të vijë nga forma në React
+    
+        if (empty($capacity) || empty($checkIn) || empty($checkOut)) {
+            return response()->json(['error' => 'Të dhënat mungojnë'], 400);
+        }
+    
+        \Log::info('Kërkohet me: ', [
+            'capacity' => $capacity,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+        ]);
+    
+        $rooms = Room::where('capacity', '>=', $capacity)
+            ->whereDoesntHave('reservations', function ($query) use ($checkIn, $checkOut) {
+                $query->where(function ($q) use ($checkIn, $checkOut) {
+                    $q->whereBetween('check_in', [$checkIn, $checkOut])
+                      ->orWhereBetween('check_out', [$checkIn, $checkOut])
+                      ->orWhere(function ($q2) use ($checkIn, $checkOut) {
+                          $q2->where('check_in', '<=', $checkIn)
+                             ->where('check_out', '>=', $checkOut);
+                      });
+                });
+            })
+            ->get();
+    
+        return response()->json($rooms);
+    }
+    
+    
+>>>>>>> 7939a173dd73ea95795fb154841479ed00e5f408
     public function index()
     {
         try {
