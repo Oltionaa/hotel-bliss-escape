@@ -10,8 +10,9 @@ import Login from "./Login";
 import Dashboard from "./Dashboard";
 import Pagesat from "./Pagesat";
 import { Link } from 'react-router-dom';
+import Confirmation from './Confirmation';
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function App() {
   const [rooms, setRooms] = useState([]); 
@@ -19,6 +20,7 @@ function App() {
   const [formData, setFormData] = useState({
     capacity: "1", 
     date: "",
+    checkOutDate: "", // Shtohet për datën e check-out
   });
 
   const handleSearch = async () => {
@@ -37,7 +39,6 @@ function App() {
       const data = await response.json();
       console.log("API Response:", data); 
   
-
       const filteredRooms = data.filter((room) => {
         return room.capacity >= parseInt(formData.capacity);
       });
@@ -78,36 +79,29 @@ function App() {
                 
                 {errorMessage && (
                   <div className="alert alert-danger">{errorMessage}</div>
-                )}{rooms && rooms.length > 0 ? (
+                )}
+                {rooms && rooms.length > 0 ? (
                   <div className="container py-5">
                     <h4 className="mb-4">Available Rooms</h4>
                     <div className="row">
                       {rooms.map((room) => (
                         <div className="col-md-4 mb-4" key={room.id}>
                           <div className="card h-100 shadow-sm">
-                            {}
                             <img 
                                 src={room.image ? `http://localhost:8000/storage/rooms/${room.image}` : 'https://via.placeholder.com/400x250'}
-
                                 className="card-img-top" 
                                 alt={room.name || 'Room'} 
                                 style={{ height: '250px', objectFit: 'cover' }}
-                              />
+                            />
 
                             <div className="card-body">
-                              {}
                               <h5 className="card-title">{room.name || room.title}</h5>
-                              {}
                               <p className="card-text">{room.description || room.pershkrimi}</p>
                               <div className="d-flex justify-content-between text-muted mb-2">
-                                {}
                                 <small><i className="bi bi-fullscreen"></i> SIZE {room.size || room.madhesia} m²</small>
-                                {}
                                 <small><i className="bi bi-people"></i> MAX {room.capacity || room.kapaciteti} people</small>
                               </div>
-                              {}
                               <p className="fw-bold">€{room.price || room.cmimi}</p>
-                              {}
                               <Link to="/payments" className="btn btn-dark w-100">BOOK NOW</Link>
                             </div>
                           </div>
@@ -120,7 +114,7 @@ function App() {
                     <h4>No rooms available for your search.</h4>
                   </div>
                 )}
-                
+
                 <RoomsAndSuites rooms={rooms} />
                 <About />
                 <Contact />
@@ -132,6 +126,7 @@ function App() {
           <Route path="/payments" element={<Pagesat />} />
           <Route path="/roomsandsuites" element={<RoomsAndSuites />} />
           <Route path="/about" element={<About />} />
+          <Route path="/confirmation" element={<Confirmation />} />
         </Routes>
       </div>
     </Router>

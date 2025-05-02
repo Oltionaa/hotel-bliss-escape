@@ -12,11 +12,15 @@ return new class extends Migration {
     {
         Schema::create('logins', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->ipAddress('ip_address')->nullable();
-            $table->string('user_agent')->nullable();
+            $table->unsignedBigInteger('user_id'); // Sigurohu që user_id është unsignedBigInteger
+            $table->timestamp('last_login');
             $table->timestamps();
+        
+            // Shto foreign key lidhjen
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+        
+        
     }
 
 

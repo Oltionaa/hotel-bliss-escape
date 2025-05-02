@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import axios from 'axios';
 
-const Pagesat = ({ payments, onUpdatePayments }) => {
-  const [cards, setCards] = useState([
-    { type: 'mastercard', last4: '3325' },
-    { type: 'visa', last4: '6050' },
-  ]);
-  const [selectedCard, setSelectedCard] = useState('3325');
+const Pagesat = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Përdor një roomId të vlefshëm si default (p.sh., 6)
+  const { roomTitle, roomPrice, checkIn, checkOut, people, roomId = 6 } = location.state || {};
 
   const [cardNumber, setCardNumber] = useState('');
   const [cardType, setCardType] = useState('visa');
@@ -15,51 +17,60 @@ const Pagesat = ({ payments, onUpdatePayments }) => {
   const [cvv, setCvv] = useState('');
   const [error, setError] = useState('');
 
-  const handleSelect = (last4) => {
-    setSelectedCard(last4);
-  };
+  const handleCheckout = async () => {
+    if (!cardholder || !bankName || !cardNumber || !cvv) {
+      setError('Please fill in all fields.');
+      return;
+    }
 
-  const handleAddCard = () => {
-    if (!/^\d{16}$/.test(cardNumber)) {
+    if (cardNumber.length !== 16 || isNaN(cardNumber)) {
       setError('Card number must be 16 digits.');
       return;
     }
 
-    if (!/^\d{3}$/.test(cvv)) {
+    if (cvv.length !== 3 || isNaN(cvv)) {
       setError('CVV must be 3 digits.');
       return;
     }
 
-    if (!cardholder.trim()) {
-      setError('Full name is required.');
+    if (!roomPrice || !roomTitle || !roomId) {
+      setError('Failed to process reservation. Missing room information.');
       return;
     }
 
-    if (!bankName.trim()) {
-      setError('Bank name is required.');
-      return;
-    }
-
-    const last4 = cardNumber.slice(-4);
-    setCards([...cards, { type: cardType, last4 }]);
-
-    // Reset fields
-    setCardNumber('');
-    setCardType('visa');
-    setCardholder('');
-    setBankName('');
-    setCvv('');
-    setError('');
-    setSelectedCard(last4);
-  };
-
-  const handleCheckout = () => {
-    const newPayment = {
-      id: payments.length + 1,
-      amount: 1000,
-      date: new Date().toLocaleDateString(),
+    const reservationData = {
+      room_title: roomTitle,
+      room_price: roomPrice,
+      check_in: checkIn,
+      check_out: checkOut,
+      people: people,
+      cardholder: cardholder,
+      bank_name: bankName,
+      card_number: cardNumber,
+      card_type: cardType,
+      cvv: cvv,
+      room_id: roomId,
     };
-    onUpdatePayments(newPayment);
+
+    console.log('Data being sent to /api/checkout:', reservationData);
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/checkout', reservationData);
+      const newPayment = response.data.payment;
+
+      navigate('/confirmation', {
+        state: {
+          paymentDetails: newPayment,
+          roomTitle,
+          checkIn,
+          checkOut,
+          people,
+        },
+      });
+    } catch (err) {
+      setError('Error processing payment: ' + (err.response?.data?.message || err.message));
+      console.error('Error details:', err.response?.data || err.message);
+    }
   };
 
   const getCardLogo = (type) => {
@@ -68,14 +79,18 @@ const Pagesat = ({ payments, onUpdatePayments }) => {
       : 'https://img.icons8.com/color/24/000000/mastercard-logo.png';
   };
 
+  if (!roomTitle || !roomPrice || !roomId) {
+    return (
+      <div className="container mt-5 text-center text-danger">
+        Room information missing. Please go back and select a room.
+      </div>
+    );
+  }
+
   return (
-    <div className="container mt-5" style={{ maxWidth: '400px' }}>
-      <div className="card shadow-sm p-3">
-        <h5 className="mb-3">💳 Credit/Debit Card</h5>
-
-    
-
-        {/* Form always visible */}
+    <div className="container mt-5" style={{ maxWidth: '600px' }}>
+      <div className="card shadow-sm p-4">
+        <h5 className="mb-3">💳 Credit/Debit Card Payment</h5>
         <input
           type="text"
           className="form-control mb-2"
@@ -83,7 +98,6 @@ const Pagesat = ({ payments, onUpdatePayments }) => {
           value={cardholder}
           onChange={(e) => setCardholder(e.target.value)}
         />
-
         <input
           type="text"
           className="form-control mb-2"
@@ -91,15 +105,14 @@ const Pagesat = ({ payments, onUpdatePayments }) => {
           value={bankName}
           onChange={(e) => setBankName(e.target.value)}
         />
-
         <input
           type="text"
           className="form-control mb-2"
           placeholder="Enter 16-digit card number"
           value={cardNumber}
+          maxLength={16}
           onChange={(e) => setCardNumber(e.target.value)}
         />
-
         <div className="d-flex align-items-center mb-2">
           <img
             src={getCardLogo(cardType)}
@@ -116,22 +129,21 @@ const Pagesat = ({ payments, onUpdatePayments }) => {
             <option value="mastercard">MasterCard</option>
           </select>
         </div>
-
         <input
           type="text"
           className="form-control mb-2"
           placeholder="CVV (3 digits)"
           value={cvv}
-          onChange={(e) => setCvv(e.target.value)}
           maxLength={3}
+          onChange={(e) => setCvv(e.target.value)}
         />
-
-        {error && <div className="text-danger mb-2">{error}</div>}
-
-
-        <button className="mt-6 px-6 py-2 bg-black text-white rounded hover:bg-gray-800">
-             Pay Now
-            </button>
+        {error && <div className="text-danger mb-3">{error}</div>}
+        <button
+          className="btn btn-dark w-100"
+          onClick={handleCheckout}
+        >
+          Pay Now ${roomPrice}
+        </button>
       </div>
     </div>
   );

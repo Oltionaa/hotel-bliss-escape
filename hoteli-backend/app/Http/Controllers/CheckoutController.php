@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Reservation;
+use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class CheckoutController extends Controller
+{
+    public function processCheckout(Request $request)
+    {
+        \Log::info('Checkout request received', $request->all());
+
+        try {
+            // Validimi i të dhënave
+            $validated = $request->validate([
+                'room_title' => 'required|string',
+                'room_price' => 'required|numeric',
+                'check_in' => 'required|date',
+                'check_out' => 'required|date',
+                'people' => 'required|integer',
+                'cardholder' => 'required|string',
+                'bank_name' => 'required|string',
+                'card_number' => 'required|digits:16',
+                'card_type' => 'required|in:visa,mastercard',
+                'cvv' => 'required|digits:3',
+                'room_id' => 'required|integer|exists:rooms,id',
+            ]);
+
+            \Log::info('Validated data:', $validated);
+
+            DB::beginTransaction();
+
+            $reservation = Reservation::create([
+                'customer_name' => $validated['cardholder'],
+                'check_in' => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+                'room_id' => $validated['room_id'],
+            ]);
+
+            $payment = Payment::create([
+                'reservation_id' => $reservation->id,
+                'amount' => $validated['room_price'],
+                'paid_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Payment and reservation processed successfully!',
+                'payment' => [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'date' => $payment->paid_at->format('Y-m-d'), // Përdor format() në vend të toLocaleDateString()
+                    'status' => 'completed',
+                ],
+            ], 200);
+        } catch (ValidationException $e) {
+            \Log::error('Validation failed: ' . json_encode($e->errors()));
+            return response()->json([
+                'error' => 'Validation failed.',
+                'messages' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Checkout error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to process payment.',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+}
