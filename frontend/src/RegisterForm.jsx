@@ -1,110 +1,142 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-const RegisterForm = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const Pagesat = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleSubmit = async e => {
-    e.preventDefault();
+  const { roomTitle, roomPrice, checkIn, checkOut, people } = location.state || {};
 
-    // Validime të thjeshta
-    if (!name.trim()) {
-      alert('Ju lutemi shkruani emrin tuaj.');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardType, setCardType] = useState('visa');
+  const [cardholder, setCardholder] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [error, setError] = useState('');
+
+  const handleCheckout = () => {
+    // Validimi bazik
+    if (!cardholder || !bankName || !cardNumber || !cvv) {
+      setError('Please fill in all fields.');
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      alert('Email është i pavlefshëm.');
+    if (cardNumber.length !== 16 || isNaN(cardNumber)) {
+      setError('Card number must be 16 digits.');
       return;
     }
 
-    if (password.length < 6) {
-      alert('Password duhet të ketë të paktën 6 karaktere.');
+    if (cvv.length !== 3 || isNaN(cvv)) {
+      setError('CVV must be 3 digits.');
       return;
     }
 
-    if (password !== confirmPassword) {
-      alert('Fjalëkalimet nuk përputhen.');
+    if (!roomPrice || !roomTitle) {
+      setError('Failed to process reservation.');
       return;
     }
 
-    try {
-      const response = await axios.post('http://localhost:8000/api/register', {
-        name,
-        email,
-        password,
-        password_confirmation: confirmPassword
-      });
-      console.log('Regjistrimi u krye me sukses:', response.data);
-    } catch (error) {
-      console.error('Gabim gjatë regjistrimit:', error.response?.data);
-    }
+    // Pagesa është në rregull
+    const newPayment = {
+      id: Date.now(),
+      amount: roomPrice,
+      date: new Date().toLocaleDateString(),
+    };
+
+    navigate('/confirmation', {
+      state: {
+        paymentDetails: newPayment,
+        roomTitle,
+        checkIn,
+        checkOut,
+        people,
+      }
+    });
   };
 
+  const getCardLogo = (type) => {
+    return type === 'visa'
+      ? 'https://img.icons8.com/color/24/000000/visa.png'
+      : 'https://img.icons8.com/color/24/000000/mastercard-logo.png';
+  };
+
+  // Nëse nuk ka të dhëna nga room
+  if (!roomTitle || !roomPrice) {
+    return (
+      <div className="container mt-5 text-center text-danger">
+        Room information missing. Please go back and select a room.
+      </div>
+    );
+  }
+
   return (
-    <div className="container d-flex justify-content-center align-items-center mt-5">
-      <div className="card shadow-lg p-4" style={{ maxWidth: '450px', width: '100%' }}>
-        <h2 className="text-center mb-4">Register</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Full Name</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter your full name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
-          </div>
+    <div className="container mt-5" style={{ maxWidth: '600px' }}>
+      <div className="card shadow-sm p-4">
+        <h5 className="mb-3">💳 Credit/Debit Card Payment</h5>
 
-          <div className="mb-3">
-            <label className="form-label">Email address</label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="Enter your email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="Full Name"
+          value={cardholder}
+          onChange={(e) => setCardholder(e.target.value)}
+        />
 
-          <div className="mb-3">
-            <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Enter your password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-          </div>
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="Bank Name"
+          value={bankName}
+          onChange={(e) => setBankName(e.target.value)}
+        />
 
-          <div className="mb-3">
-            <label className="form-label">Confirm Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="Enter 16-digit card number"
+          value={cardNumber}
+          maxLength={16}
+          onChange={(e) => setCardNumber(e.target.value)}
+        />
 
-          <div className="d-grid gap-2">
-            <button className="btn btn-success">Register</button>
-          </div>
-        </form>
+        <div className="d-flex align-items-center mb-2">
+          <img
+            src={getCardLogo(cardType)}
+            alt={cardType}
+            className="me-2"
+            style={{ width: 30 }}
+          />
+          <select
+            className="form-select"
+            value={cardType}
+            onChange={(e) => setCardType(e.target.value)}
+          >
+            <option value="visa">Visa</option>
+            <option value="mastercard">MasterCard</option>
+          </select>
+        </div>
 
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="CVV (3 digits)"
+          value={cvv}
+          maxLength={3}
+          onChange={(e) => setCvv(e.target.value)}
+        />
+
+        {error && <div className="text-danger mb-3">{error}</div>}
+
+        <button
+          className="btn btn-dark w-100"
+          onClick={handleCheckout}
+        >
+          Pay Now ${roomPrice}
+        </button>
       </div>
     </div>
   );
 };
 
-export default RegisterForm;
+export default Pagesat;
