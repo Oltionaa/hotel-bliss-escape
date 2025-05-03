@@ -1,85 +1,86 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import axios from 'axios';
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
+import axios from "axios";
 
 const Pagesat = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Përdor një roomId të vlefshëm si default (p.sh., 6)
-  const { roomTitle, roomPrice, checkIn, checkOut, people, roomId = 6 } = location.state || {};
+  const { roomId, roomTitle, checkIn, checkOut } = location.state || {};
 
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardType, setCardType] = useState('visa');
-  const [cardholder, setCardholder] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [error, setError] = useState('');
+  console.log("Pagesat state:", { roomId, roomTitle, checkIn, checkOut });
+
+  const [formData, setFormData] = useState({
+    customerName: "",
+    cardholder: "",
+    bankName: "",
+    cardNumber: "",
+    cardType: "",
+    cvv: "",
+  });
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
 
   const handleCheckout = async () => {
-    if (!cardholder || !bankName || !cardNumber || !cvv) {
-      setError('Please fill in all fields.');
-      return;
-    }
+    const { customerName, cardholder, bankName, cardNumber, cardType, cvv } = formData;
 
-    if (cardNumber.length !== 16 || isNaN(cardNumber)) {
-      setError('Card number must be 16 digits.');
-      return;
-    }
-
-    if (cvv.length !== 3 || isNaN(cvv)) {
-      setError('CVV must be 3 digits.');
-      return;
-    }
-
-    if (!roomPrice || !roomTitle || !roomId) {
-      setError('Failed to process reservation. Missing room information.');
+    if (!customerName || !cardholder || !bankName || !cardNumber || !cardType || !cvv) {
+      setError("Ju lutem plotësoni të gjitha fushat.");
       return;
     }
 
     const reservationData = {
-      room_title: roomTitle,
-      room_price: roomPrice,
+      customer_name: customerName,
       check_in: checkIn,
       check_out: checkOut,
-      people: people,
-      cardholder: cardholder,
-      bank_name: bankName,
-      card_number: cardNumber,
-      card_type: cardType,
-      cvv: cvv,
       room_id: roomId,
+      status: "confirmed",
+      payment: {
+        cardholder,
+        bank_name: bankName,
+        card_number: cardNumber,
+        card_type: cardType,
+        cvv,
+      },
     };
 
-    console.log('Data being sent to /api/checkout:', reservationData);
+    console.log("Data being sent to /api/checkout:", reservationData);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/checkout', reservationData);
+      const response = await axios.post(
+        "http://localhost:8000/api/checkout",
+        reservationData
+      );
+      console.log("Checkout response:", response.data);
+      const newReservation = response.data.reservation;
       const newPayment = response.data.payment;
 
-      navigate('/confirmation', {
+      navigate("/confirmation", {
         state: {
+          reservationDetails: newReservation,
           paymentDetails: newPayment,
           roomTitle,
           checkIn,
           checkOut,
-          people,
         },
       });
     } catch (err) {
-      setError('Error processing payment: ' + (err.response?.data?.message || err.message));
-      console.error('Error details:', err.response?.data || err.message);
+      const errorMessage =
+        err.response?.data?.message || err.message || "Unknown error";
+      setError("Error processing reservation: " + errorMessage);
+      console.error("Checkout error:", err.response?.data || err);
     }
   };
 
-  const getCardLogo = (type) => {
-    return type === 'visa'
-      ? 'https://img.icons8.com/color/24/000000/visa.png'
-      : 'https://img.icons8.com/color/24/000000/mastercard-logo.png';
-  };
-
-  if (!roomTitle || !roomPrice || !roomId) {
+  if (!roomId || !roomTitle || !checkIn || !checkOut) {
     return (
       <div className="container mt-5 text-center text-danger">
         Room information missing. Please go back and select a room.
@@ -88,61 +89,99 @@ const Pagesat = () => {
   }
 
   return (
-    <div className="container mt-5" style={{ maxWidth: '600px' }}>
+    <div className="container mt-5" style={{ maxWidth: "600px" }}>
       <div className="card shadow-sm p-4">
-        <h5 className="mb-3">💳 Credit/Debit Card Payment</h5>
-        <input
-          type="text"
-          className="form-control mb-2"
-          placeholder="Full Name"
-          value={cardholder}
-          onChange={(e) => setCardholder(e.target.value)}
-        />
-        <input
-          type="text"
-          className="form-control mb-2"
-          placeholder="Bank Name"
-          value={bankName}
-          onChange={(e) => setBankName(e.target.value)}
-        />
-        <input
-          type="text"
-          className="form-control mb-2"
-          placeholder="Enter 16-digit card number"
-          value={cardNumber}
-          maxLength={16}
-          onChange={(e) => setCardNumber(e.target.value)}
-        />
-        <div className="d-flex align-items-center mb-2">
-          <img
-            src={getCardLogo(cardType)}
-            alt={cardType}
-            className="me-2"
-            style={{ width: 30 }}
+        <h5 className="mb-3">📋 Reservation for {roomTitle}</h5>
+        <p className="text-muted">
+          Check-In: {checkIn} | Check-Out: {checkOut}
+        </p>
+        <div className="mb-3">
+          <label htmlFor="customerName" className="form-label">
+            Your Name
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="customerName"
+            name="customerName"
+            value={formData.customerName}
+            onChange={handleChange}
+            placeholder="Enter your name"
           />
-          <select
-            className="form-select"
-            value={cardType}
-            onChange={(e) => setCardType(e.target.value)}
-          >
-            <option value="visa">Visa</option>
-            <option value="mastercard">MasterCard</option>
-          </select>
         </div>
-        <input
-          type="text"
-          className="form-control mb-2"
-          placeholder="CVV (3 digits)"
-          value={cvv}
-          maxLength={3}
-          onChange={(e) => setCvv(e.target.value)}
-        />
+        <div className="mb-3">
+          <label htmlFor="cardholder" className="form-label">
+            Cardholder Name
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="cardholder"
+            name="cardholder"
+            value={formData.cardholder}
+            onChange={handleChange}
+            placeholder="Enter cardholder name"
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="bankName" className="form-label">
+            Bank Name
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="bankName"
+            name="bankName"
+            value={formData.bankName}
+            onChange={handleChange}
+            placeholder="Enter bank name"
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="cardNumber" className="form-label">
+            Card Number
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="cardNumber"
+            name="cardNumber"
+            value={formData.cardNumber}
+            onChange={handleChange}
+            placeholder="Enter card number"
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="cardType" className="form-label">
+            Card Type
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="cardType"
+            name="cardType"
+            value={formData.cardType}
+            onChange={handleChange}
+            placeholder="e.g., Visa, MasterCard"
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="cvv" className="form-label">
+            CVV
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="cvv"
+            name="cvv"
+            value={formData.cvv}
+            onChange={handleChange}
+            placeholder="Enter CVV"
+          />
+        </div>
         {error && <div className="text-danger mb-3">{error}</div>}
-        <button
-          className="btn btn-dark w-100"
-          onClick={handleCheckout}
-        >
-          Pay Now ${roomPrice}
+        <button className="btn btn-dark w-100" onClick={handleCheckout}>
+          Confirm Reservation
         </button>
       </div>
     </div>

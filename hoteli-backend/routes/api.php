@@ -18,3 +18,4 @@ Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 Route::post('/book-room', [ReservationController::class, 'bookRoom']);
 Route::post('/reservations', [ReservationController::class, 'store']);
 Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
+Route::post("/checkout", [RoomController::class, "checkout"]);
