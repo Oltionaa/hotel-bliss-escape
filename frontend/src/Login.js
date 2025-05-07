@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Importo useNavigate nga react-router-dom
+import { useNavigate } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -10,7 +11,7 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate(); // Inizializohet useNavigate për navigim
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,20 +31,18 @@ const Login = () => {
 
     try {
       const response = await axios.post('http://localhost:8000/api/login', { email, password });
-      // Ruajmë userId në localStorage pas login-it
-      localStorage.setItem('userId', response.data.userId);
-      console.log(response.data);
-
-      // Pasi login është i suksesshëm, drejto në faqen kryesore
-      navigate('/'); // Kthehu në faqen kryesore
+      console.log('Login response:', response.data); // Debug: Shiko përgjigjen
+      localStorage.setItem('token', response.data.token); // Ruaj token-in
+      localStorage.setItem('user_id', response.data.user.id); // Ruaj user_id me çelësin e saktë
+      navigate('/dashboard'); // Shko te dashboard-i pas login-it
     } catch (error) {
-      setError(error.response?.data?.message || 'Login dështoi.');
+      setError(error.response?.data?.message || 'Identifikimi dështoi.');
+      console.error('Login error:', error.response?.data || error);
     } finally {
       setLoading(false);
     }
   };
 
-  // REGISTER
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -77,11 +76,15 @@ const Login = () => {
         password, 
         password_confirmation: confirmPassword 
       });
-      console.log(response.data);
+      console.log('Register response:', response.data);
+      localStorage.setItem('token', response.data.token); // Ruaj token-in pas regjistrimit
+      localStorage.setItem('user_id', response.data.user.id); // Ruaj user_id
       setIsLogin(true);
       resetFields();
+      navigate('/dashboard'); // Shko te dashboard-i pas regjistrimit
     } catch (error) {
       setError(error.response?.data?.message || 'Regjistrimi dështoi.');
+      console.error('Register error:', error.response?.data || error);
     } finally {
       setLoading(false);
     }
@@ -97,15 +100,15 @@ const Login = () => {
   return (
     <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
       <div className="card shadow p-4" style={{ width: '100%', maxWidth: '450px' }}>
-        <h2 className="text-center mb-4">{isLogin ? 'Login' : 'Sign In'}</h2>
+        <h2 className="text-center mb-4">{isLogin ? 'Identifikohu' : 'Regjistrohu'}</h2>
         <form onSubmit={isLogin ? handleLogin : handleRegister}>
           {!isLogin && (
             <div className="mb-3">
-              <label className="form-label">Full Name</label>
+              <label className="form-label">Emri i Plotë</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Enter your name"
+                placeholder="Shkruani emrin tuaj"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -114,11 +117,11 @@ const Login = () => {
           )}
 
           <div className="mb-3">
-            <label className="form-label">Email address</label>
+            <label className="form-label">Email</label>
             <input
               type="email"
               className="form-control"
-              placeholder="Enter your email"
+              placeholder="Shkruani email-in tuaj"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -126,11 +129,11 @@ const Login = () => {
           </div>
 
           <div className="mb-3">
-            <label className="form-label">Password</label>
+            <label className="form-label">Fjalëkalimi</label>
             <input
               type="password"
               className="form-control"
-              placeholder="Enter your password"
+              placeholder="Shkruani fjalëkalimin tuaj"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -139,11 +142,11 @@ const Login = () => {
 
           {!isLogin && (
             <div className="mb-3">
-              <label className="form-label">Confirm Password</label>
+              <label className="form-label">Konfirmo Fjalëkalimin</label>
               <input
                 type="password"
                 className="form-control"
-                placeholder="Confirm your password"
+                placeholder="Konfirmo fjalëkalimin tuaj"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -155,16 +158,16 @@ const Login = () => {
 
           <div className="d-grid gap-2">
             <button className="btn btn-dark" disabled={loading}>
-              {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
+              {loading ? 'Duke u ngarkuar...' : isLogin ? 'Identifikohu' : 'Regjistrohu'}
             </button>
           </div>
         </form>
 
         <div className="text-center mt-3">
           <p>
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
+            {isLogin ? "Nuk keni llogari?" : "Keni tashmë një llogari?"}{' '}
             <button className="btn btn-link p-0" onClick={() => setIsLogin(!isLogin)}>
-              {isLogin ? 'Sign In' : 'Login'}
+              {isLogin ? 'Regjistrohu' : 'Identifikohu'}
             </button>
           </p>
         </div>

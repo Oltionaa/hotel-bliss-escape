@@ -8,7 +8,7 @@ import RoomsAndSuites from "./RoomsAndSuites";
 import About from "./About";
 import Contact from "./Contact";
 import Login from "./Login";
-import Dashboard from "./Dashboard";
+import UserDashboard from "./UserDashboard"; // Zëvendësuar Dashboard me UserDashboard
 import Pagesat from "./Pagesat";
 import Confirmation from "./Confirmation";
 
@@ -156,7 +156,7 @@ function App() {
           }
         />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<UserDashboard />} /> {/* Zëvendësuar Dashboard me UserDashboard */}
         <Route path="/payments" element={<Pagesat />} />
         <Route path="/roomsandsuites" element={<RoomsAndSuites />} />
         <Route path="/about" element={<About />} />

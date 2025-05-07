@@ -37,11 +37,19 @@ const Pagesat = () => {
       return;
     }
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Ju lutem identifikohuni për të bërë rezervimin.");
+      navigate("/login");
+      return;
+    }
+
     const reservationData = {
       customer_name: customerName,
       check_in: checkIn,
       check_out: checkOut,
       room_id: roomId,
+      user_id: localStorage.getItem("user_id"), // Shto user_id
       status: "confirmed",
       payment: {
         cardholder,
@@ -57,7 +65,13 @@ const Pagesat = () => {
     try {
       const response = await axios.post(
         "http://localhost:8000/api/checkout",
-        reservationData
+        reservationData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Shto autorizim
+            "Content-Type": "application/json",
+          },
+        }
       );
       console.log("Checkout response:", response.data);
       const newReservation = response.data.reservation;
@@ -74,8 +88,8 @@ const Pagesat = () => {
       });
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || err.message || "Unknown error";
-      setError("Error processing reservation: " + errorMessage);
+        err.response?.data?.message || err.message || "Gabim i panjohur";
+      setError("Gabim gjatë procesimit të rezervimit: " + errorMessage);
       console.error("Checkout error:", err.response?.data || err);
     }
   };
@@ -83,7 +97,7 @@ const Pagesat = () => {
   if (!roomId || !roomTitle || !checkIn || !checkOut) {
     return (
       <div className="container mt-5 text-center text-danger">
-        Room information missing. Please go back and select a room.
+        Informacioni i dhomës mungon. Ju lutem kthehuni dhe zgjidhni një dhomë.
       </div>
     );
   }
@@ -91,13 +105,13 @@ const Pagesat = () => {
   return (
     <div className="container mt-5" style={{ maxWidth: "600px" }}>
       <div className="card shadow-sm p-4">
-        <h5 className="mb-3">📋 Reservation for {roomTitle}</h5>
+        <h5 className="mb-3">📋 Rezervimi për {roomTitle}</h5>
         <p className="text-muted">
           Check-In: {checkIn} | Check-Out: {checkOut}
         </p>
         <div className="mb-3">
           <label htmlFor="customerName" className="form-label">
-            Your Name
+            Emri Juaj
           </label>
           <input
             type="text"
@@ -106,12 +120,12 @@ const Pagesat = () => {
             name="customerName"
             value={formData.customerName}
             onChange={handleChange}
-            placeholder="Enter your name"
+            placeholder="Shkruani emrin tuaj"
           />
         </div>
         <div className="mb-3">
           <label htmlFor="cardholder" className="form-label">
-            Cardholder Name
+            Emri i Mbajtësit të Kartës
           </label>
           <input
             type="text"
@@ -120,12 +134,12 @@ const Pagesat = () => {
             name="cardholder"
             value={formData.cardholder}
             onChange={handleChange}
-            placeholder="Enter cardholder name"
+            placeholder="Shkruani emrin e mbajtësit të kartës"
           />
         </div>
         <div className="mb-3">
           <label htmlFor="bankName" className="form-label">
-            Bank Name
+            Emri i Bankës
           </label>
           <input
             type="text"
@@ -134,12 +148,12 @@ const Pagesat = () => {
             name="bankName"
             value={formData.bankName}
             onChange={handleChange}
-            placeholder="Enter bank name"
+            placeholder="Shkruani emrin e bankës"
           />
         </div>
         <div className="mb-3">
           <label htmlFor="cardNumber" className="form-label">
-            Card Number
+            Numri i Kartës
           </label>
           <input
             type="text"
@@ -148,12 +162,12 @@ const Pagesat = () => {
             name="cardNumber"
             value={formData.cardNumber}
             onChange={handleChange}
-            placeholder="Enter card number"
+            placeholder="Shkruani numrin e kartës"
           />
         </div>
         <div className="mb-3">
           <label htmlFor="cardType" className="form-label">
-            Card Type
+            Tipi i Kartës
           </label>
           <input
             type="text"
@@ -162,7 +176,7 @@ const Pagesat = () => {
             name="cardType"
             value={formData.cardType}
             onChange={handleChange}
-            placeholder="e.g., Visa, MasterCard"
+            placeholder="p.sh., Visa, MasterCard"
           />
         </div>
         <div className="mb-3">
@@ -176,12 +190,12 @@ const Pagesat = () => {
             name="cvv"
             value={formData.cvv}
             onChange={handleChange}
-            placeholder="Enter CVV"
+            placeholder="Shkruani CVV"
           />
         </div>
         {error && <div className="text-danger mb-3">{error}</div>}
         <button className="btn btn-dark w-100" onClick={handleCheckout}>
-          Confirm Reservation
+          Konfirmo Rezervimin
         </button>
       </div>
     </div>
