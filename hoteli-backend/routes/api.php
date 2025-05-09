@@ -8,7 +8,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CheckoutController;
 
 // Routat ekzistues
-Route::post('register', [UserController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register']);
 Route::get('/test', function () {
     return response()->json(['status' => 'Backend connected!']);
 });

@@ -81,7 +81,7 @@ const Login = () => {
       localStorage.setItem('user_id', response.data.user.id); // Ruaj user_id
       setIsLogin(true);
       resetFields();
-      navigate('/dashboard'); // Shko te dashboard-i pas regjistrimit
+      navigate('/'); // Shko te dashboard-i pas regjistrimit
     } catch (error) {
       setError(error.response?.data?.message || 'Regjistrimi dështoi.');
       console.error('Register error:', error.response?.data || error);
