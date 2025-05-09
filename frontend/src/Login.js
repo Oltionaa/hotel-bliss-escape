@@ -32,9 +32,12 @@ const Login = () => {
     try {
       const response = await axios.post('http://localhost:8000/api/login', { email, password });
       console.log('Login response:', response.data); // Debug: Shiko përgjigjen
-      localStorage.setItem('token', response.data.token); // Ruaj token-in
-      localStorage.setItem('user_id', response.data.user.id); // Ruaj user_id me çelësin e saktë
-      navigate('/dashboard'); // Shko te dashboard-i pas login-it
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user_id', response.data.user.id);
+      // Ruaj rolin e përdoruesit si userType
+      const userRole = response.data.user.role || 'user'; // Përdor 'user' si default nëse roli mungon
+      localStorage.setItem('userType', userRole);
+      navigate('/');
     } catch (error) {
       setError(error.response?.data?.message || 'Identifikimi dështoi.');
       console.error('Login error:', error.response?.data || error);
@@ -70,18 +73,21 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/api/register', { 
-        name, 
-        email, 
-        password, 
-        password_confirmation: confirmPassword 
+      const response = await axios.post('http://localhost:8000/api/register', {
+        name,
+        email,
+        password,
+        password_confirmation: confirmPassword,
       });
       console.log('Register response:', response.data);
-      localStorage.setItem('token', response.data.token); // Ruaj token-in pas regjistrimit
-      localStorage.setItem('user_id', response.data.user.id); // Ruaj user_id
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user_id', response.data.user.id);
+      // Ruaj rolin e përdoruesit si userType
+      const userRole = response.data.user.role || 'user'; // Përdor 'user' si default nëse roli mungon
+      localStorage.setItem('userType', userRole);
       setIsLogin(true);
       resetFields();
-      navigate('/'); // Shko te dashboard-i pas regjistrimit
+      navigate('/');
     } catch (error) {
       setError(error.response?.data?.message || 'Regjistrimi dështoi.');
       console.error('Register error:', error.response?.data || error);
@@ -165,7 +171,7 @@ const Login = () => {
 
         <div className="text-center mt-3">
           <p>
-            {isLogin ? "Nuk keni llogari?" : "Keni tashmë një llogari?"}{' '}
+            {isLogin ? 'Nuk keni llogari?' : 'Keni tashmë një llogari?'}{' '}
             <button className="btn btn-link p-0" onClick={() => setIsLogin(!isLogin)}>
               {isLogin ? 'Regjistrohu' : 'Identifikohu'}
             </button>

@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CleanerController;
 
 // Routat ekzistues
 Route::post('/register', [AuthController::class, 'register']);
@@ -15,6 +16,7 @@ Route::get('/test', function () {
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/search-rooms', [RoomController::class, 'search']);
 Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
+
 
 Route::post('/book-room', [ReservationController::class, 'bookRoom']);
 Route::post('/reservations', [ReservationController::class, 'store']);
@@ -27,3 +29,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy']);
     Route::post('/book-room', [ReservationController::class, 'bookRoom']); // Mbajtur për konsistencë
 });
+
+Route::get('cleaner/rooms', [CleanerController::class, 'getDirtyRooms']);
+
+// Route për të markuar dhomën si të pastruar
+Route::put('/cleaner/rooms/{roomId}/clean', [CleanerController::class, 'markRoomAsClean']);
+
+// Route për të marrë të gjitha dhomat
+Route::get('/cleaner/rooms/all', [CleanerController::class, 'getAllRooms']);

@@ -11,7 +11,7 @@ import Login from "./Login";
 import UserDashboard from "./UserDashboard"; // Zëvendësuar Dashboard me UserDashboard
 import Pagesat from "./Pagesat";
 import Confirmation from "./Confirmation";
-
+import CleanerDashboard from './CleanerDashboard';
 function App() {
   const [rooms, setRooms] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -161,7 +161,9 @@ function App() {
         <Route path="/roomsandsuites" element={<RoomsAndSuites />} />
         <Route path="/about" element={<About />} />
         <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/cleaner-dashboard" element={<CleanerDashboard />} />
       </Routes>
+
     </div>
   );
 }

@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Hero() {
+  const [userType, setUserType] = useState(null);
+
+  useEffect(() => {
+    // Merr llojin e përdoruesit nga localStorage
+    const updateUserType = () => {
+      const storedUserType = localStorage.getItem('userType');
+      setUserType(storedUserType ? storedUserType.trim().toLowerCase() : null);
+    };
+
+    // Thirr fillimisht
+    updateUserType();
+
+    // Dëgjo ndryshimet në localStorage
+    window.addEventListener('storage', updateUserType);
+
+    // Pastro event listener kur komponenti çmontohet
+    return () => {
+      window.removeEventListener('storage', updateUserType);
+    };
+  }, []);
+
   return (
     <div
       className="bg-dark text-white text-center d-flex align-items-center justify-content-center"
@@ -21,9 +42,19 @@ function Hero() {
           <br />
           For Vacation
         </h1>
-        <Link to="/roomsandsuites" className="btn btn-dark">
-          See Our Rooms
-        </Link>
+
+        <div className="d-flex justify-content-center gap-3 mt-3">
+          <Link to="/roomsandsuites" className="btn btn-dark">
+            See Our Rooms
+          </Link>
+
+          {/* Shfaq button-in vetëm për cleaner */}
+          {userType === 'cleaner' && (
+            <Link to="/cleaner-dashboard" className="btn btn-outline-light">
+              Cleaner Dashboard
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

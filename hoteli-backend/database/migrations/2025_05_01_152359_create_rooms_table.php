@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->integer('capacity')->nullable();
             $table->decimal('price', 10, 2)->nullable();
             $table->boolean('is_reserved')->default(false);
+            $table->enum('status', ['clean', 'dirty'])->default('clean');
             $table->text("description")->nullable();
             $table->string("size")->nullable();
             $table->timestamps();

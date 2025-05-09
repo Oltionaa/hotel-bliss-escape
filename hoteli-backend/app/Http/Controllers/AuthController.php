@@ -25,6 +25,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
                 ],
             ]);
         }
@@ -44,6 +45,7 @@ class AuthController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => 'user', // caktohet roli default manualisht
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -54,6 +56,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
             ],
         ], 201);
     }
