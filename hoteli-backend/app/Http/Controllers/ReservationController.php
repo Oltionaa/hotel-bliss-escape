@@ -78,6 +78,7 @@ class ReservationController extends Controller
             ]);
 
             $room->is_reserved = true;
+            $room->status = 'dirty';
             $room->save();
 
             DB::commit();
