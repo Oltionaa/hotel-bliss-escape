@@ -9,8 +9,6 @@ const Pagesat = () => {
 
   const { roomId, roomTitle, checkIn, checkOut } = location.state || {};
 
-  console.log("Pagesat state:", { roomId, roomTitle, checkIn, checkOut });
-
   const [formData, setFormData] = useState({
     customerName: "",
     cardholder: "",
@@ -19,21 +17,39 @@ const Pagesat = () => {
     cardType: "",
     cvv: "",
   });
+
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateCardNumber = (number) => {
+    
+    return /^\d{13,19}$/.test(number);
+  };
+
+  const validateCVV = (cvv) => {
+    return /^\d{3,4}$/.test(cvv);
   };
 
   const handleCheckout = async () => {
+    setError("");
+
     const { customerName, cardholder, bankName, cardNumber, cardType, cvv } = formData;
 
     if (!customerName || !cardholder || !bankName || !cardNumber || !cardType || !cvv) {
       setError("Ju lutem plotësoni të gjitha fushat.");
+      return;
+    }
+
+    if (!validateCardNumber(cardNumber)) {
+      setError("Numri i kartës nuk është valid. Duhet të përmbajë vetëm shifra (13-19).");
+      return;
+    }
+    if (!validateCVV(cvv)) {
+      setError("CVV nuk është valid. Duhet të përmbajë 3 ose 4 shifra.");
       return;
     }
 
@@ -43,13 +59,13 @@ const Pagesat = () => {
       navigate("/login");
       return;
     }
-
+    
     const reservationData = {
       customer_name: customerName,
       check_in: checkIn,
       check_out: checkOut,
       room_id: roomId,
-      user_id: localStorage.getItem("user_id"), // Shto user_id
+      user_id: localStorage.getItem("user_id"),
       status: "confirmed",
       payment: {
         cardholder,
@@ -60,38 +76,34 @@ const Pagesat = () => {
       },
     };
 
-    console.log("Data being sent to /api/checkout:", reservationData);
-
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/checkout",
-        reservationData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // Shto autorizim
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Checkout response:", response.data);
-      const newReservation = response.data.reservation;
-      const newPayment = response.data.payment;
+      const response = await axios.post("http://localhost:8000/api/checkout", reservationData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const { reservation, payment } = response.data;
 
       navigate("/confirmation", {
         state: {
-          reservationDetails: newReservation,
-          paymentDetails: newPayment,
+          reservationDetails: reservation,
+          paymentDetails: payment,
           roomTitle,
           checkIn,
           checkOut,
         },
       });
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || err.message || "Gabim i panjohur";
-      setError("Gabim gjatë procesimit të rezervimit: " + errorMessage);
-      console.error("Checkout error:", err.response?.data || err);
+      const errorMessage = err.response?.data?.message || err.message || "Gabim i panjohur";
+       setError(
+  errorMessage === "Dhoma është e rezervuar tashmë"
+    ? "Më vjen keq, dhoma është e zënë për datat që zgjodhët. Ju lutem zgjidhni një datë tjetër ose një dhomë tjetër."
+    : "Gabim gjatë procesimit të rezervimit: " + errorMessage
+);
     }
+    
   };
 
   if (!roomId || !roomTitle || !checkIn || !checkOut) {
@@ -109,6 +121,7 @@ const Pagesat = () => {
         <p className="text-muted">
           Check-In: {checkIn} | Check-Out: {checkOut}
         </p>
+
         <div className="mb-3">
           <label htmlFor="customerName" className="form-label">
             Emri Juaj
@@ -123,6 +136,7 @@ const Pagesat = () => {
             placeholder="Shkruani emrin tuaj"
           />
         </div>
+
         <div className="mb-3">
           <label htmlFor="cardholder" className="form-label">
             Emri i Mbajtësit të Kartës
@@ -137,6 +151,7 @@ const Pagesat = () => {
             placeholder="Shkruani emrin e mbajtësit të kartës"
           />
         </div>
+
         <div className="mb-3">
           <label htmlFor="bankName" className="form-label">
             Emri i Bankës
@@ -151,20 +166,23 @@ const Pagesat = () => {
             placeholder="Shkruani emrin e bankës"
           />
         </div>
+
         <div className="mb-3">
           <label htmlFor="cardNumber" className="form-label">
             Numri i Kartës
           </label>
           <input
-            type="text"
+            type="number"
             className="form-control"
             id="cardNumber"
             name="cardNumber"
             value={formData.cardNumber}
             onChange={handleChange}
             placeholder="Shkruani numrin e kartës"
+            min="0"
           />
         </div>
+
         <div className="mb-3">
           <label htmlFor="cardType" className="form-label">
             Tipi i Kartës
@@ -179,21 +197,25 @@ const Pagesat = () => {
             placeholder="p.sh., Visa, MasterCard"
           />
         </div>
+
         <div className="mb-3">
           <label htmlFor="cvv" className="form-label">
             CVV
           </label>
           <input
-            type="text"
+            type="number"
             className="form-control"
             id="cvv"
             name="cvv"
             value={formData.cvv}
             onChange={handleChange}
             placeholder="Shkruani CVV"
+            min="0"
           />
         </div>
+
         {error && <div className="text-danger mb-3">{error}</div>}
+
         <button className="btn btn-dark w-100" onClick={handleCheckout}>
           Konfirmo Rezervimin
         </button>
