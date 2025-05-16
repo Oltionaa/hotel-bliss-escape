@@ -15,13 +15,12 @@ Route::get('/test', function () {
 });
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/search-rooms', [RoomController::class, 'search']);
-Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
-
+Route::get('/rooms', [ReservationController::class, 'indexRooms'])->name('rooms.index');
 
 Route::post('/book-room', [ReservationController::class, 'bookRoom']);
 Route::post('/reservations', [ReservationController::class, 'store']);
-Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
-Route::post("/checkout", [RoomController::class, "checkout"]);
+Route::post('/checkout', [CheckoutController::class, 'processCheckout']); // Mbajtur për momentin, mund të hiqet nëse është e panevojshme
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkout', [ReservationController::class, 'checkout']);
     Route::get('/reservations/user', [ReservationController::class, 'indexApi']);
@@ -30,10 +29,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/book-room', [ReservationController::class, 'bookRoom']); // Mbajtur për konsistencë
 });
 
-Route::get('cleaner/rooms', [CleanerController::class, 'getDirtyRooms']);
-
-// Route për të markuar dhomën si të pastruar
+// Për pastruesit
+Route::get('/cleaner/rooms', [CleanerController::class, 'getDirtyRooms']);
 Route::put('/cleaner/rooms/{roomId}/clean', [CleanerController::class, 'markRoomAsClean']);
-
-// Route për të marrë të gjitha dhomat
 Route::get('/cleaner/rooms/all', [CleanerController::class, 'getAllRooms']);
+
+// Për recepsionistët
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/admin/reservations', [ReservationController::class, 'indexAdmin']);
+    Route::post('/admin/reservations', [ReservationController::class, 'storeAdmin']);
+    Route::put('/admin/reservations/{reservation}', [ReservationController::class, 'updateAdmin']);
+    Route::delete('/admin/reservations/{reservation}', [ReservationController::class, 'destroyAdmin']);
+    Route::put('/admin/rooms/{room}/status', [ReservationController::class, 'updateRoomStatus']);
+});

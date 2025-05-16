@@ -48,10 +48,17 @@ function Hero() {
             See Our Rooms
           </Link>
 
-          {/* Shfaq button-in vetëm për cleaner */}
+          {/* Shfaq button-in për cleaner */}
           {userType === 'cleaner' && (
             <Link to="/cleaner-dashboard" className="btn btn-outline-light">
               Cleaner Dashboard
+            </Link>
+          )}
+
+          {/* Shfaq button-in për recepsionist */}
+          {userType === 'recepsionist' && (
+            <Link to="/receptionist-dashboard" className="btn btn-outline-light">
+              Receptionist Dashboard
             </Link>
           )}
         </div>
