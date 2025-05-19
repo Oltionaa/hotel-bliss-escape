@@ -9,6 +9,8 @@ function Hero() {
     // Merr llojin e përdoruesit nga localStorage
     const updateUserType = () => {
       const storedUserType = localStorage.getItem('userType');
+      const authToken = localStorage.getItem('authToken');
+      console.log('Hero: userType:', storedUserType, 'authToken:', authToken);
       setUserType(storedUserType ? storedUserType.trim().toLowerCase() : null);
     };
 
@@ -56,9 +58,16 @@ function Hero() {
           )}
 
           {/* Shfaq button-in për recepsionist */}
-          {userType === 'recepsionist' && (
+          {userType === 'receptionist' && (
             <Link to="/receptionist-dashboard" className="btn btn-outline-light">
               Receptionist Dashboard
+            </Link>
+          )}
+
+          {/* Shfaq button-in për admin */}
+          {userType === 'admin' && (
+            <Link to="/admin-dashboard" className="btn btn-outline-light">
+              Admin Dashboard
             </Link>
           )}
         </div>

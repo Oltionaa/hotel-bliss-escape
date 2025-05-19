@@ -12,16 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id(); // Përdor bigIncrements, që është unsigned
+            $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'user', 'cleaner', 'recepsionist'])->default('user');
+            $table->enum('role', ['admin', 'user', 'cleaner', 'receptionist'])->default('user'); // Korrigjuar 'recepsionist' në 'receptionist'
+            $table->string('status')->default('active'); // Shtuar kolona status
             $table->rememberToken();
             $table->timestamps();
         });
-        
-        
     }
 
     /**

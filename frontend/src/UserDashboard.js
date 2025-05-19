@@ -11,13 +11,14 @@ const UserDashboard = () => {
     check_in: "",
     check_out: "",
   });
+  const [isUpdating, setIsUpdating] = useState(false);
   const navigate = useNavigate();
 
-  // Marrja e rezervimeve të përdoruesit
   useEffect(() => {
     const fetchReservations = async () => {
       try {
         const token = localStorage.getItem("token");
+        console.log("Token për fetch:", token);
         if (!token) {
           setError("Ju lutem identifikohuni për të parë rezervimet.");
           navigate("/login");
@@ -26,19 +27,23 @@ const UserDashboard = () => {
         const response = await axios.get("http://localhost:8000/api/reservations/user", {
           headers: {
             Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
         });
-        console.log("API Response:", response.data); // Debug: Shiko çfarë kthen API-ja
+        console.log("API Response:", response.data);
         setReservations(response.data.reservations || []);
       } catch (err) {
-        console.error("Fetch error:", err.response || err);
+        console.error("Fetch error:", err.response?.data || err.message);
         setError("Gabim gjatë marrjes së rezervimeve: " + (err.response?.data?.message || err.message));
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
       }
     };
     fetchReservations();
   }, [navigate]);
 
-  // Ndryshimi i të dhënave në formën e editimit
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditFormData((prevData) => ({
@@ -47,7 +52,6 @@ const UserDashboard = () => {
     }));
   };
 
-  // Fillimi i editimit të një rezervimi
   const startEditing = (reservation) => {
     setEditReservationId(reservation.id);
     setEditFormData({
@@ -56,9 +60,16 @@ const UserDashboard = () => {
     });
   };
 
-  // Ruajtja e ndryshimeve të editimit
   const saveEdit = async (reservationId) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
+      const token = localStorage.getItem("token");
+      console.log("Kërkesa PUT, reservationId:", reservationId, "Token:", token);
+      if (!token) {
+        throw new Error("Token mungon. Ridrejto te login.");
+      }
+
       const response = await axios.put(
         `http://localhost:8000/api/reservations/${reservationId}`,
         {
@@ -67,11 +78,13 @@ const UserDashboard = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
         }
       );
-      console.log("Update response:", response.data); // Debug
+      console.log("Update response:", response.data);
       setReservations(
         reservations.map((res) =>
           res.id === reservationId ? { ...res, ...response.data.reservation } : res
@@ -79,26 +92,54 @@ const UserDashboard = () => {
       );
       setEditReservationId(null);
       setError("");
-    } catch (err) {
-      console.error("Update error:", err.response || err);
-      setError("Gabim gjatë përditësimit të rezervimit: " + (err.response?.data?.message || err.message));
+    } catch (error) {
+      console.error("Gabim gjatë përditësimit:", error.response?.data || error.message);
+      let errorMessage = error.response?.data?.message || error.message;
+      if (error.response?.status === 401) {
+        errorMessage = "Përdoruesi nuk është autentikuar. Ju lutem identifikohuni përsëri.";
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else if (error.response?.status === 404) {
+        errorMessage = "Rezervimi nuk u gjet.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Nuk keni autorizim për të përditësuar këtë rezervim.";
+      } else if (error.response?.status === 422) {
+        errorMessage = "Të dhënat e dhëna janë të pavlefshme. Kontrollo datat.";
+      } else if (error.response?.status === 500) {
+        errorMessage = "Gabim në server. Ju lutem provoni përsëri më vonë.";
+      }
+      setError(errorMessage);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  // Anulimi i një rezervimi
   const cancelReservation = async (reservationId) => {
     if (!window.confirm("Jeni të sigurt që doni të anuloni këtë rezervim?")) return;
     try {
+      const token = localStorage.getItem("token");
+      console.log("Kërkesa DELETE, reservationId:", reservationId, "Token:", token);
+      if (!token) {
+        throw new Error("Token mungon. Ridrejto te login.");
+      }
+
       await axios.delete(`http://localhost:8000/api/reservations/${reservationId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
         },
       });
       setReservations(reservations.filter((res) => res.id !== reservationId));
       setError("");
     } catch (err) {
-      console.error("Delete error:", err.response || err);
-      setError("Gabim gjatë anulimit të rezervimit: " + (err.response?.data?.message || err.message));
+      console.error("Delete error:", err.response?.data || err.message);
+      let errorMessage = err.response?.data?.message || err.message;
+      if (err.response?.status === 401) {
+        errorMessage = "Përdoruesi nuk është autentikuar. Ju lutem identifikohuni përsëri.";
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+      setError("Gabim gjatë anulimit të rezervimit: " + errorMessage);
     }
   };
 
@@ -149,12 +190,14 @@ const UserDashboard = () => {
                       <button
                         className="btn btn-success me-2"
                         onClick={() => saveEdit(reservation.id)}
+                        disabled={isUpdating}
                       >
                         Ruaj
                       </button>
                       <button
                         className="btn btn-secondary"
                         onClick={() => setEditReservationId(null)}
+                        disabled={isUpdating}
                       >
                         Anulo Editimin
                       </button>
