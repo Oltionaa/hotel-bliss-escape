@@ -29,29 +29,7 @@ const Contact = () => {
         </div>
       </div>
 
-      <form className="row g-3">
-        <div className="col-md-6">
-          <input type="text" className="form-control border-success" placeholder="First Name" />
-        </div>
-        <div className="col-md-6">
-          <input type="text" className="form-control border-success" placeholder="Last Name" />
-        </div>
-        <div className="col-md-6">
-          <input type="email" className="form-control border-success" placeholder="Email Address" />
-        </div>
-        <div className="col-md-6">
-          <input type="tel" className="form-control border-success" placeholder="Phone" />
-        </div>
-        <div className="col-12">
-          <input type="text" className="form-control border-success" placeholder="Subject" />
-        </div>
-        <div className="col-12">
-          <textarea className="form-control border-success" placeholder="Message" rows="5"></textarea>
-        </div>
-        <div className="col-12 text-end">
-          <button type="submit" className="mt-6 px-6 py-2 bg-black text-white rounded hover:bg-gray-800">SUBMIT</button>
-        </div>
-      </form>
+    
     </div>
   );
 };
