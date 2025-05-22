@@ -1,44 +1,57 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RoomController;
-use App\Http\Controllers\ReservationController;
-use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\CleanerController;
+use App\Http\Controllers\{
+    AuthController,
+    UserController,
+    RoomController,
+    ReservationController,
+    CleanerController,
+    DashboardController,
+    CheckoutController,
+};
 
-// Routat ekzistues
+// 🔓 Public Routes
 Route::post('/register', [AuthController::class, 'register']);
-Route::get('/test', function () {
-    return response()->json(['status' => 'Backend connected!']);
-});
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/sanctum/csrf-cookie', [\Laravel\Sanctum\Http\Controllers\CsrfCookieController::class, 'show']);
+Route::get('/test', fn() => response()->json(['status' => 'Backend connected!']));
 Route::post('/search-rooms', [RoomController::class, 'search']);
-Route::get('/rooms', [ReservationController::class, 'indexRooms'])->name('rooms.index');
-
+Route::get('/rooms', [ReservationController::class, 'indexRooms']);
 Route::post('/book-room', [ReservationController::class, 'bookRoom']);
-Route::post('/reservations', [ReservationController::class, 'store']);
-Route::post('/checkout', [CheckoutController::class, 'processCheckout']); // Mbajtur për momentin, mund të hiqet nëse është e panevojshme
+Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/checkout', [ReservationController::class, 'checkout']);
+// ✅ Protected Routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    // 📦 Reservations (për klientët)
     Route::get('/reservations/user', [ReservationController::class, 'indexApi']);
-    Route::put('/reservations/{reservation}', [ReservationController::class, 'updateApi']);
+    Route::post('/reservations/checkout', [ReservationController::class, 'checkout']);
+    Route::put('/reservations/{reservation}', [ReservationController::class, 'update']);
     Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy']);
-    Route::post('/book-room', [ReservationController::class, 'bookRoom']); // Mbajtur për konsistencë
-});
 
-// Për pastruesit
-Route::get('/cleaner/rooms', [CleanerController::class, 'getDirtyRooms']);
-Route::put('/cleaner/rooms/{roomId}/clean', [CleanerController::class, 'markRoomAsClean']);
-Route::get('/cleaner/rooms/all', [CleanerController::class, 'getAllRooms']);
+    // 🧹 Cleaner
+    Route::prefix('cleaner')->group(function () {
+        Route::get('/dashboard', [CleanerController::class, 'dashboard']);
+        Route::get('/rooms', [CleanerController::class, 'getDirtyRooms']);
+        Route::put('/rooms/{room}/clean', [CleanerController::class, 'markRoomAsClean']);
+        Route::get('/rooms/all', [CleanerController::class, 'getAllRooms']);
+    });
 
-// Për recepsionistët
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/admin/reservations', [ReservationController::class, 'indexAdmin']);
-    Route::post('/admin/reservations', [ReservationController::class, 'storeAdmin']);
-    Route::put('/admin/reservations/{reservation}', [ReservationController::class, 'updateAdmin']);
-    Route::delete('/admin/reservations/{reservation}', [ReservationController::class, 'destroyAdmin']);
-    Route::put('/admin/rooms/{room}/status', [ReservationController::class, 'updateRoomStatus']);
+    // 💼 Receptionist
+    Route::prefix('receptionist')->group(function () {
+        Route::get('/reservations', [ReservationController::class, 'indexAdmin']);
+        Route::post('/reservations', [ReservationController::class, 'storeAdmin']);
+        Route::put('/reservations/{reservation}', [ReservationController::class, 'updateAdmin']);
+        Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroyAdmin']);
+        Route::put('/rooms/{room}/status', [ReservationController::class, 'updateRoomStatus']);
+    });
+
+    // 🛠 Admin
+    Route::prefix('admin')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'dashboard']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::get('/users/{id}', [UserController::class, 'show']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
 });

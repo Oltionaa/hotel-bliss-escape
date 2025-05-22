@@ -19,53 +19,73 @@ const ReceptionistDashboard = () => {
   });
   const navigate = useNavigate();
 
-  const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8000/api',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
-    },
-  });
-
-  const fetchReservations = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get('/admin/reservations');
-      setReservations(response.data.reservations);
-      setError('');
-    } catch (error) {
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userType');
-        navigate('/login');
-      }
-      setError(error.response?.data?.message || 'Gabim gjatë marrjes së rezervimeve');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get('/rooms');
-      setRooms(response.data);
-      setError('');
-    } catch (error) {
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userType');
-        navigate('/login');
-      }
-      setError(error.response?.data?.message || 'Gabim gjatë marrjes së dhomave');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userType = localStorage.getItem('userType')?.trim().toLowerCase();
+    console.log('ReceptionistDashboard: token:', token, 'userType:', userType);
+
+    if (!token || userType !== 'receptionist') {
+      console.log('Redirecting to login: No token or wrong userType');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('userType');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    const fetchReservations = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get('http://localhost:8000/api/receptionist/reservations', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Reservations response:', response.data);
+        setReservations(response.data.reservations || []);
+        setError('');
+      } catch (error) {
+        console.error('Error fetching reservations:', error.response?.data || error);
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Unauthorized or Forbidden: Redirecting to login');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('userType');
+          navigate('/login', { replace: true });
+        } else {
+          setError(error.response?.data?.message || 'Gabim gjatë marrjes së rezervimeve');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchRooms = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get('http://localhost:8000/api/rooms', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Rooms response:', response.data);
+        setRooms(response.data || []);
+        setError('');
+      } catch (error) {
+        console.error('Error fetching rooms:', error.response?.data || error);
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Unauthorized or Forbidden: Redirecting to login');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('userType');
+          navigate('/login', { replace: true });
+        } else {
+          setError(error.response?.data?.message || 'Gabim gjatë marrjes së dhomave');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchReservations();
     fetchRooms();
-  }, []);
+  }, [navigate]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -83,10 +103,12 @@ const ReceptionistDashboard = () => {
     }
     setLoading(true);
     try {
+      const token = localStorage.getItem('token');
       if (editingReservation) {
-        const response = await axiosInstance.put(
-          `/admin/reservations/${editingReservation.id}`,
-          formData
+        const response = await axios.put(
+          `http://localhost:8000/api/receptionist/reservations/${editingReservation.id}`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setReservations(
           reservations.map((r) =>
@@ -95,7 +117,11 @@ const ReceptionistDashboard = () => {
         );
         setEditingReservation(null);
       } else {
-        const response = await axiosInstance.post('/admin/reservations', formData);
+        const response = await axios.post(
+          'http://localhost:8000/api/receptionist/reservations',
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setReservations([...reservations, response.data.reservation]);
       }
       setFormData({
@@ -108,12 +134,16 @@ const ReceptionistDashboard = () => {
       });
       setError('');
     } catch (error) {
+      console.error('Error saving reservation:', error.response?.data || error);
       if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Unauthorized or Forbidden: Redirecting to login');
         localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
         localStorage.removeItem('userType');
-        navigate('/login');
+        navigate('/login', { replace: true });
+      } else {
+        setError(error.response?.data?.message || 'Gabim gjatë ruajtjes së rezervimit');
       }
-      setError(error.response?.data?.message || 'Gabim gjatë ruajtjes së rezervimit');
     } finally {
       setLoading(false);
     }
@@ -123,16 +153,23 @@ const ReceptionistDashboard = () => {
     if (window.confirm('Jeni i sigurt që doni të fshini këtë rezervim?')) {
       setLoading(true);
       try {
-        await axiosInstance.delete(`/admin/reservations/${id}`);
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:8000/api/receptionist/reservations/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setReservations(reservations.filter((r) => r.id !== id));
         setError('');
       } catch (error) {
+        console.error('Error deleting reservation:', error.response?.data || error);
         if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Unauthorized or Forbidden: Redirecting to login');
           localStorage.removeItem('token');
+          localStorage.removeItem('user_id');
           localStorage.removeItem('userType');
-          navigate('/login');
+          navigate('/login', { replace: true });
+        } else {
+          setError(error.response?.data?.message || 'Gabim gjatë fshirjes së rezervimit');
         }
-        setError(error.response?.data?.message || 'Gabim gjatë fshirjes së rezervimit');
       } finally {
         setLoading(false);
       }
@@ -154,19 +191,26 @@ const ReceptionistDashboard = () => {
   const handleToggleStatus = async (id, currentStatus) => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('token');
       const newStatus = currentStatus === 'clean' ? 'dirty' : 'clean';
-      const response = await axiosInstance.put(`/admin/rooms/${id}/status`, {
-        status: newStatus,
-      });
+      const response = await axios.put(
+        `http://localhost:8000/api/receptionist/rooms/${id}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setRooms(rooms.map((room) => (room.id === id ? response.data.room : room)));
       setError('');
     } catch (error) {
+      console.error('Error toggling room status:', error.response?.data || error);
       if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Unauthorized or Forbidden: Redirecting to login');
         localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
         localStorage.removeItem('userType');
-        navigate('/login');
+        navigate('/login', { replace: true });
+      } else {
+        setError(error.response?.data?.message || 'Gabim gjatë ndryshimit të statusit të dhomës');
       }
-      setError(error.response?.data?.message || 'Gabim gjatë ndryshimit të statusit të dhomës');
     } finally {
       setLoading(false);
     }
@@ -241,7 +285,7 @@ const ReceptionistDashboard = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Status生态</Form.Label>
+              <Form.Label>Statusi</Form.Label>
               <Form.Select
                 name="status"
                 value={formData.status}

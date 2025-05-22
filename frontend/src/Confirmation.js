@@ -43,7 +43,7 @@ const Confirmation = () => {
           <strong>Room:</strong> {roomTitle}
         </p>
         <p>
-          <strong>Customer Name:</strong> {reservationDetails.customer_name}
+          <strong>Customer Name:</strong> {reservationDetails.customer_name || 'N/A'}
         </p>
         <p>
           <strong>Check-In:</strong> {checkIn}
@@ -52,20 +52,20 @@ const Confirmation = () => {
           <strong>Check-Out:</strong> {checkOut}
         </p>
         <p>
-          <strong>Status:</strong> {reservationDetails.status}
+          <strong>Status:</strong> {reservationDetails.status || 'N/A'}
         </p>
         <h5 className="mb-3 mt-4">Payment Details</h5>
         <p>
-          <strong>Cardholder:</strong> {paymentDetails.cardholder}
+          <strong>Cardholder:</strong> {paymentDetails.cardholder || 'N/A'}
         </p>
         <p>
-          <strong>Bank Name:</strong> {paymentDetails.bank_name}
+          <strong>Bank Name:</strong> {paymentDetails.bank_name || 'N/A'}
         </p>
         <p>
-          <strong>Card Type:</strong> {paymentDetails.card_type}
+          <strong>Card Type:</strong> {paymentDetails.card_type || 'N/A'}
         </p>
         <p>
-          <strong>Card Number (Last 4):</strong> {paymentDetails.card_number.slice(-4)}
+          <strong>Card Number (Last 4):</strong> {paymentDetails.card_number ? paymentDetails.card_number.slice(-4) : 'N/A'}
         </p>
         <div className="text-center mt-4">
           <a href="/" className="btn btn-dark">
