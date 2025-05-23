@@ -17,6 +17,11 @@ return new class extends Migration {
             $table->enum('status', ['clean', 'dirty'])->default('clean');
             $table->text("description")->nullable();
             $table->string("size")->nullable();
+
+            // Shto user_id si foreign key
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+
             $table->timestamps();
         });
     }

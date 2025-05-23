@@ -3,10 +3,10 @@ import axios from 'axios';
 
 function Navbar() {
   const navigate = useNavigate();
+  const token = localStorage.getItem('token'); 
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('token');
       if (!token) {
         alert('No token found. Please log in again.');
         navigate('/login');
@@ -53,11 +53,19 @@ function Navbar() {
               About Us
             </a>
           </li>
-          <li className="nav-item mx-2">
-            <button className="nav-link btn btn-link" onClick={handleLogout}>
-              Logout
-            </button>
-          </li>
+          {token ? (
+            <li className="nav-item mx-2">
+              <button className="nav-link btn btn-link" onClick={handleLogout}>
+                Logout
+              </button>
+            </li>
+          ) : (
+            <li className="nav-item mx-2">
+              <Link className="nav-link" to="/login">
+                Login
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
     </nav>
