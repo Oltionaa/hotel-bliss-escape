@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 
@@ -29,7 +30,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Account is inactive'], 403);
         }
 
-        // Delete old tokens to allow only one device/session (optional)
+        // Delete old tokens to allow only one device/session
         $user->tokens()->delete();
 
         // Create new token
@@ -86,5 +87,30 @@ class AuthController extends Controller
         ], 201);
     }
 
-   
+    // Logout method
+    public function logout(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+            $token = $user->currentAccessToken();
+            if (!$token) {
+                return response()->json(['message' => 'No active token found'], 400);
+            }
+            $token->delete();
+            Log::info('User logged out successfully', ['user_id' => $user->id]);
+            return response()->json(['message' => 'Logged out successfully'], 200);
+        } catch (\Exception $e) {
+            Log::error('Logout error: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Failed to logout',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

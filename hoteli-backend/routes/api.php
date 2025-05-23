@@ -10,6 +10,8 @@ use App\Http\Controllers\{
     CheckoutController,
 };
 
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+
 // 🔓 Public Routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

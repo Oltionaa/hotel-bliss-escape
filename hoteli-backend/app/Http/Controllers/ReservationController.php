@@ -22,7 +22,6 @@ class ReservationController extends Controller
         }
     }
 
-    // Për klientët: Lista e rezervimeve të tyre
     public function indexApi()
     {
         try {
@@ -30,7 +29,6 @@ class ReservationController extends Controller
                 ->where('status', '!=', 'cancelled')
                 ->with(['room', 'payment'])
                 ->get();
-
             return response()->json(['reservations' => $reservations]);
         } catch (\Exception $e) {
             Log::error('Error fetching user reservations: ' . $e->getMessage());
@@ -38,14 +36,12 @@ class ReservationController extends Controller
         }
     }
 
-    // Për recepsionistët: Lista e të gjitha rezervimeve
     public function indexAdmin()
     {
         try {
             if (Auth::user()->role !== 'receptionist') {
                 return response()->json(['message' => 'Veprim i paautorizuar'], 403);
             }
-
             $reservations = Reservation::with(['room', 'payment', 'user'])->get();
             return response()->json(['reservations' => $reservations]);
         } catch (\Exception $e) {
@@ -67,7 +63,6 @@ class ReservationController extends Controller
                 'check_out' => 'required|date|after:check_in',
                 'room_id' => 'required|exists:rooms,id',
                 'status' => 'required|in:pending,confirmed,cancelled',
-                'user_id' => 'nullable|exists:users,id',
             ]);
 
             $room = Room::find($validated['room_id']);
@@ -75,7 +70,6 @@ class ReservationController extends Controller
                 return response()->json(['message' => 'Dhoma nuk u gjet'], 404);
             }
 
-            // Kontrollo disponueshmërinë
             $conflictingReservations = Reservation::where('room_id', $room->id)
                 ->where('status', '!=', 'cancelled')
                 ->where(function ($query) use ($validated) {
@@ -98,7 +92,7 @@ class ReservationController extends Controller
                 'check_in' => $validated['check_in'],
                 'check_out' => $validated['check_out'],
                 'room_id' => $validated['room_id'],
-                'user_id' => $validated['user_id'] ?? null,
+                'user_id' => Auth::id(), // Store the receptionist's ID
                 'status' => $validated['status'],
             ]);
 
@@ -119,131 +113,6 @@ class ReservationController extends Controller
         }
     }
 
-   public function update(Request $request, $id)
-{
-    try {
-        Log::info('Update reservation request', [
-            'id' => $id,
-            'user_id' => Auth::id(),
-            'data' => $request->all()
-        ]);
-
-        $reservation = Reservation::findOrFail($id);
-        if ($reservation->user_id !== Auth::id()) {
-            Log::warning('Unauthorized update attempt', [
-                'user_id' => Auth::id(),
-                'reservation_id' => $id
-            ]);
-            return response()->json(['message' => 'Veprim i paautorizuar'], 403);
-        }
-
-        $validated = $request->validate([
-            'check_in' => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-        ]);
-
-        Log::info('Validated data', $validated);
-
-        // Verifiko dhomën
-        if (!$reservation->room) {
-            Log::error('Room not found for reservation', ['reservation_id' => $id]);
-            return response()->json(['message' => 'Dhoma nuk u gjet'], 404);
-        }
-
-        // Kontrollo disponueshmërinë
-        $conflictingReservations = Reservation::where('room_id', $reservation->room_id)
-            ->where('id', '!=', $reservation->id)
-            ->where('status', '!=', 'cancelled')
-            ->where(function ($query) use ($validated) {
-                $query->whereBetween('check_in', [$validated['check_in'], $validated['check_out']])
-                      ->orWhereBetween('check_out', [$validated['check_in'], $validated['check_out']])
-                      ->orWhere(function ($q) use ($validated) {
-                          $q->where('check_in', '<=', $validated['check_in'])
-                            ->where('check_out', '>=', $validated['check_out']);
-                      });
-            })->exists();
-
-        if ($conflictingReservations) {
-            Log::info('Conflicting reservation found', [
-                'room_id' => $reservation->room_id,
-                'check_in' => $validated['check_in'],
-                'check_out' => $validated['check_out']
-            ]);
-            return response()->json(['message' => 'Dhoma është e rezervuar për datat e zgjedhura'], 409);
-        }
-
-        DB::beginTransaction();
-
-        $reservation->update([
-            'check_in' => $validated['check_in'],
-            'check_out' => $validated['check_out'],
-        ]);
-
-        DB::commit();
-
-        // Ngarko lidhjet me kujdes
-        $reservation->load([
-            'room' => function ($query) {
-                $query->whereNotNull('id');
-            },
-            'payment' // Lejo payment të jetë null
-        ]);
-
-        return response()->json([
-            'message' => 'Rezervimi u përditësua me sukses',
-            'reservation' => $reservation,
-        ], 200);
-    } catch (ValidationException $e) {
-        Log::error('Validation failed: ' . json_encode($e->errors()), [
-            'request' => $request->all()
-        ]);
-        return response()->json(['message' => 'Validimi dështoi', 'errors' => $e->errors()], 422);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error updating reservation: ' . $e->getMessage(), [
-            'exception' => $e->getTraceAsString(),
-            'reservation_id' => $id,
-            'request' => $request->all()
-        ]);
-        return response()->json([
-            'message' => 'Gabim gjatë përditësimit të rezervimit',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-public function destroy(Request $request, $id)
-{
-    try {
-        $reservation = Reservation::findOrFail($id);
-
-        // Verifiko nëse përdoruesi ka të drejtë të anulojë
-        if ($reservation->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Veprim i paautorizuar'], 403);
-        }
-
-        DB::beginTransaction();
-
-        // Përditëso statusin e rezervimit në 'cancelled'
-        $reservation->status = 'cancelled';
-        $reservation->save();
-
-        // Përditëso statusin e dhomës
-        $room = $reservation->room;
-        $room->is_reserved = false;
-        $room->status = 'dirty';
-        $room->save();
-
-        DB::commit();
-
-        return response()->json(['message' => 'Rezervimi u anulua me sukses']);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error cancelling reservation: ' . $e->getMessage());
-        return response()->json(['message' => 'Gabim gjatë anulimit të rezervimit'], 500);
-    }
-}
-
-    // Për recepsionistët: Përditëso rezervimin
     public function updateAdmin(Request $request, Reservation $reservation)
     {
         try {
@@ -257,7 +126,6 @@ public function destroy(Request $request, $id)
                 'check_out' => 'required|date|after:check_in',
                 'room_id' => 'required|exists:rooms,id',
                 'status' => 'required|in:pending,confirmed,cancelled',
-                'user_id' => 'nullable|exists:users,id',
             ]);
 
             $room = Room::find($validated['room_id']);
@@ -275,7 +143,6 @@ public function destroy(Request $request, $id)
                     $oldRoom->save();
                 }
 
-                // Kontrollo disponueshmërinë për dhomën e re
                 $conflictingReservations = Reservation::where('room_id', $room->id)
                     ->where('id', '!=', $reservation->id)
                     ->where('status', '!=', 'cancelled')
@@ -298,7 +165,7 @@ public function destroy(Request $request, $id)
                 $room->save();
             }
 
-            $reservation->update($validated);
+            $reservation->update(array_merge($validated, ['user_id' => Auth::id()])); // Store the receptionist's ID
 
             DB::commit();
 
@@ -316,7 +183,125 @@ public function destroy(Request $request, $id)
         }
     }
 
-    // Për recepsionistët: Fshi rezervimin
+    public function update(Request $request, $id)
+    {
+        try {
+            Log::info('Update reservation request', [
+                'id' => $id,
+                'user_id' => Auth::id(),
+                'data' => $request->all()
+            ]);
+
+            $reservation = Reservation::findOrFail($id);
+            if ($reservation->user_id !== Auth::id()) {
+                Log::warning('Unauthorized update attempt', [
+                    'user_id' => Auth::id(),
+                    'reservation_id' => $id
+                ]);
+                return response()->json(['message' => 'Veprim i paautorizuar'], 403);
+            }
+
+            $validated = $request->validate([
+                'check_in' => 'required|date|after_or_equal:today',
+                'check_out' => 'required|date|after:check_in',
+            ]);
+
+            Log::info('Validated data', $validated);
+
+            if (!$reservation->room) {
+                Log::error('Room not found for reservation', ['reservation_id' => $id]);
+                return response()->json(['message' => 'Dhoma nuk u gjet'], 404);
+            }
+
+            $conflictingReservations = Reservation::where('room_id', $reservation->room_id)
+                ->where('id', '!=', $reservation->id)
+                ->where('status', '!=', 'cancelled')
+                ->where(function ($query) use ($validated) {
+                    $query->whereBetween('check_in', [$validated['check_in'], $validated['check_out']])
+                          ->orWhereBetween('check_out', [$validated['check_in'], $validated['check_out']])
+                          ->orWhere(function ($q) use ($validated) {
+                              $q->where('check_in', '<=', $validated['check_in'])
+                                ->where('check_out', '>=', $validated['check_out']);
+                          });
+                })->exists();
+
+            if ($conflictingReservations) {
+                Log::info('Conflicting reservation found', [
+                    'room_id' => $reservation->room_id,
+                    'check_in' => $validated['check_in'],
+                    'check_out' => $validated['check_out']
+                ]);
+                return response()->json(['message' => 'Dhoma është e rezervuar për datat e zgjedhura'], 409);
+            }
+
+            DB::beginTransaction();
+
+            $reservation->update([
+                'check_in' => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+            ]);
+
+            DB::commit();
+
+            $reservation->load([
+                'room' => function ($query) {
+                    $query->whereNotNull('id');
+                },
+                'payment'
+            ]);
+
+            return response()->json([
+                'message' => 'Rezervimi u përditësua me sukses',
+                'reservation' => $reservation,
+            ], 200);
+        } catch (ValidationException $e) {
+            Log::error('Validation failed: ' . json_encode($e->errors()), [
+                'request' => $request->all()
+            ]);
+            return response()->json(['message' => 'Validimi dështoi', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating reservation: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString(),
+                'reservation_id' => $id,
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'message' => 'Gabim gjatë përditësimit të rezervimit',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        try {
+            $reservation = Reservation::findOrFail($id);
+
+            if ($reservation->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Veprim i paautorizuar'], 403);
+            }
+
+            DB::beginTransaction();
+
+            $reservation->status = 'cancelled';
+            $reservation->save();
+
+            $room = $reservation->room;
+            $room->is_reserved = false;
+            $room->status = 'dirty';
+            $room->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Rezervimi u anulua me sukses']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error cancelling reservation: ' . $e->getMessage());
+            return response()->json(['message' => 'Gabim gjatë anulimit të rezervimit'], 500);
+        }
+    }
+
     public function destroyAdmin(Reservation $reservation)
     {
         try {
@@ -368,7 +353,6 @@ public function destroy(Request $request, $id)
         }
     }
 
-    // Metoda checkout (për klientët)
     public function checkout(Request $request)
     {
         try {
@@ -398,7 +382,6 @@ public function destroy(Request $request, $id)
                 return response()->json(['message' => 'Dhoma nuk u gjet'], 404);
             }
 
-            // Kontrollo disponueshmërinë
             $conflictingReservations = Reservation::where('room_id', $room->id)
                 ->where('status', '!=', 'cancelled')
                 ->when($validated['reservation_id'], function ($query) use ($validated) {
@@ -420,7 +403,6 @@ public function destroy(Request $request, $id)
             DB::beginTransaction();
 
             if (isset($validated['reservation_id'])) {
-                // Përditëso rezervimin ekzistues
                 $reservation = Reservation::find($validated['reservation_id']);
                 if (!$reservation) {
                     DB::rollBack();
@@ -439,7 +421,6 @@ public function destroy(Request $request, $id)
                     'user_id' => $user->id,
                 ]);
 
-                // Përditëso pagesën nëse ekziston
                 $payment = Payment::where('reservation_id', $reservation->id)->first();
                 if ($payment) {
                     $payment->update([
@@ -451,7 +432,6 @@ public function destroy(Request $request, $id)
                     ]);
                 }
             } else {
-                // Krijo rezervim të ri
                 $reservation = Reservation::create([
                     'customer_name' => $validated['customer_name'],
                     'check_in' => $validated['check_in'],
@@ -461,7 +441,6 @@ public function destroy(Request $request, $id)
                     'user_id' => $user->id,
                 ]);
 
-                // Krijo pagesën
                 $paymentData = $validated['payment'];
                 Payment::create([
                     'reservation_id' => $reservation->id,
