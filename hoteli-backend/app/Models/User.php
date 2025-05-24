@@ -1,27 +1,30 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // ← ADD THIS
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable; // ← ADD HasApiTokens here too
-
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
+        'role', 
         'status',
     ];
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    public function schedules()
+    {
+        return $this->hasMany(ReceptionistSchedule::class, 'receptionist_id');
+    }
 }

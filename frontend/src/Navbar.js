@@ -3,7 +3,8 @@ import axios from 'axios';
 
 function Navbar() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token'); 
+  const token = localStorage.getItem('token');
+  const userType = localStorage.getItem('userType'); // Merr userType nga localStorage
 
   const handleLogout = async () => {
     try {
@@ -23,6 +24,7 @@ function Navbar() {
         }
       );
       localStorage.removeItem('token');
+      localStorage.removeItem('userType'); // Hiq userType në logout gjithashtu
       navigate('/login');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
@@ -38,21 +40,35 @@ function Navbar() {
       </Link>
       <div className="collapse navbar-collapse justify-content-end">
         <ul className="navbar-nav">
+
           <li className="nav-item mx-2">
             <Link className="nav-link" to="/">
               Home
             </Link>
           </li>
+
           <li className="nav-item mx-2">
             <Link className="nav-link" to="/dashboard">
               Reservations
             </Link>
           </li>
+
           <li className="nav-item mx-2">
             <a className="nav-link" href="#about">
               About Us
             </a>
           </li>
+
+          {/* Link vetëm për recepsionistë */}
+          {userType?.toLowerCase() === "receptionist" && (
+            <li className="nav-item mx-2">
+             <Link className="nav-link" to="/receptionist-schedules">
+              Orari Recepsionistit
+            </Link>
+            </li>
+          )}
+
+          {/* Login / Logout */}
           {token ? (
             <li className="nav-item mx-2">
               <button className="nav-link btn btn-link" onClick={handleLogout}>
@@ -66,6 +82,7 @@ function Navbar() {
               </Link>
             </li>
           )}
+
         </ul>
       </div>
     </nav>

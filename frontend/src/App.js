@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
+
 import Navbar from './Navbar';
 import Hero from './Hero';
 import BookingForm from './BookingForm';
@@ -17,7 +18,7 @@ import AdminDashboard from './AdminDashboard';
 import UsersList from './UsersList';
 import CreateUser from './CreateUser';
 import EditUser from './EditUser';
- // Importo komponentin e ri (krijo më poshtë)
+import ReceptionistSchedule from "./ReceptionistSchedule"; 
 
 function App() {
   const [rooms, setRooms] = useState([]);
@@ -28,6 +29,15 @@ function App() {
     checkOutDate: '',
   });
   const navigate = useNavigate();
+
+  const [authToken, setAuthToken] = useState(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token'); 
+    if (storedToken) {
+      setAuthToken(storedToken);
+    }
+  }, []); 
 
   const handleSearch = async () => {
     setErrorMessage('');
@@ -81,24 +91,23 @@ function App() {
     });
   };
 
-  // Route Guards
   const AdminRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    console.log('AdminRoute:', { token, userType, isAuthenticated: !!token && userType === 'admin' });
+    // Konfirmo që tokeni ekziston dhe roli është 'admin'
     if (!token || userType !== 'admin') {
-      console.log('AdminRoute: Redirecting to /login', { token, userType });
+      console.log('AdminRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
     }
-    return <Outlet />;
+    return <Outlet />; // Shfaq komponentin fëmijë (dashboard-in, etj.)
   };
 
   const ReceptionistRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    console.log('ReceptionistRoute:', { token, userType, isAuthenticated: !!token && userType === 'receptionist' });
+    // Konfirmo që tokeni ekziston dhe roli është 'receptionist'
     if (!token || userType !== 'receptionist') {
-      console.log('ReceptionistRoute: Redirecting to /login', { token, userType });
+      console.log('ReceptionistRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
     }
     return <Outlet />;
@@ -107,9 +116,9 @@ function App() {
   const CleanerRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    console.log('CleanerRoute:', { token, userType, isAuthenticated: !!token && userType === 'cleaner' });
+    // Konfirmo që tokeni ekziston dhe roli është 'cleaner'
     if (!token || userType !== 'cleaner') {
-      console.log('CleanerRoute: Redirecting to /login', { token, userType });
+      console.log('CleanerRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
     }
     return <Outlet />;
@@ -118,9 +127,9 @@ function App() {
   const UserRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    console.log('UserRoute:', { token, userType, isAuthenticated: !!token && userType === 'user' });
+    // Konfirmo që tokeni ekziston dhe roli është 'user'
     if (!token || userType !== 'user') {
-      console.log('UserRoute: Redirecting to /login', { token, userType });
+      console.log('UserRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
     }
     return <Outlet />;
@@ -148,7 +157,7 @@ function App() {
               {rooms.length > 0 ? (
                 <div className="container py-5">
                   <h4 className="mb-4">
-                    Available Rooms for {formData.date || 'N/A'} to{' '}
+                    Dhoma në dispozicion për {formData.date || 'N/A'} deri më{' '}
                     {formData.checkOutDate || 'N/A'}
                   </h4>
                   <div className="row">
@@ -166,18 +175,18 @@ function App() {
                             style={{ height: '250px', objectFit: 'cover' }}
                           />
                           <div className="card-body">
-                            <h5 className="card-title">{room.name || 'No name'}</h5>
+                            <h5 className="card-title">{room.name || 'Pa emër'}</h5>
                             <p className="card-text">
-                              {room.description || 'No description available'}
+                              {room.description || 'Nuk ka përshkrim në dispozicion'}
                             </p>
                             <div className="d-flex justify-content-between text-muted mb-2">
                               <small>
-                                <i className="bi bi-fullscreen"></i> SIZE{' '}
+                                <i className="bi bi-fullscreen"></i> MADHËSIA{' '}
                                 {room.size || 'N/A'} m²
                               </small>
                               <small>
                                 <i className="bi bi-people"></i> MAX{' '}
-                                {room.capacity || 'N/A'} people
+                                {room.capacity || 'N/A'} persona
                               </small>
                             </div>
                             <p className="fw-bold">€{room.price || 'N/A'}</p>
@@ -185,7 +194,7 @@ function App() {
                               className="btn btn-dark w-100"
                               onClick={() => handleBookNow(room)}
                             >
-                              BOOK NOW
+                              REZERVONI TANI
                             </button>
                           </div>
                         </div>
@@ -195,7 +204,7 @@ function App() {
                 </div>
               ) : (
                 <div className="container py-5">
-                  <h4>No rooms available for your search.</h4>
+                  <h4>Asnjë dhomë në dispozicion për kërkimin tuaj.</h4>
                 </div>
               )}
               <RoomsAndSuites rooms={rooms} />
@@ -204,26 +213,32 @@ function App() {
             </>
           }
         />
+
         <Route path="/login" element={<Login />} />
         <Route element={<UserRoute />}>
           <Route path="/dashboard" element={<UserDashboard />} />
         </Route>
+
         <Route path="/payments" element={<Pagesat />} />
         <Route path="/roomsandsuites" element={<RoomsAndSuites />} />
         <Route path="/about" element={<About />} />
         <Route path="/confirmation" element={<Confirmation />} />
+
         <Route element={<CleanerRoute />}>
           <Route path="/cleaner-dashboard" element={<CleanerDashboard />} />
         </Route>
+
         <Route element={<ReceptionistRoute />}>
           <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
+          <Route path="/receptionist-schedules" element={<ReceptionistSchedule authToken={authToken} />} />
         </Route>
+
         <Route element={<AdminRoute />}>
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/users" element={<UsersList />} />
-            <Route path="/users/create" element={<CreateUser />} />
-            <Route path="/users/edit/:id" element={<EditUser />} />
-            </Route>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/users" element={<UsersList />} />
+          <Route path="/users/create" element={<CreateUser />} />
+          <Route path="/users/edit/:id" element={<EditUser />} />
+        </Route>
       </Routes>
     </div>
   );
