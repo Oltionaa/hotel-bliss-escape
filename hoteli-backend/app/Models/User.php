@@ -27,4 +27,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(ReceptionistSchedule::class, 'receptionist_id');
     }
+    public function cleanerSchedules()
+{
+    return $this->hasMany(CleanerSchedule::class, 'cleaner_id');
+}
 }

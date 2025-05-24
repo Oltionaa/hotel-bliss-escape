@@ -8,8 +8,9 @@ function Navbar() {
 
   const handleLogout = async () => {
     try {
+      // Nuk përdorim alert(), por console.error ose një modal/toast
       if (!token) {
-        alert('No token found. Please log in again.');
+        console.error('No token found. Please log in again.');
         navigate('/login');
         return;
       }
@@ -25,11 +26,12 @@ function Navbar() {
       );
       localStorage.removeItem('token');
       localStorage.removeItem('userType'); // Hiq userType në logout gjithashtu
+      localStorage.removeItem('userId'); // Hiq edhe userId
       navigate('/login');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       console.error('Logout failed:', errorMessage);
-      alert(`Failed to logout: ${errorMessage}`);
+      // alert(`Failed to logout: ${errorMessage}`); // Shmang alert()
     }
   };
 
@@ -62,8 +64,17 @@ function Navbar() {
           {/* Link vetëm për recepsionistë */}
           {userType?.toLowerCase() === "receptionist" && (
             <li className="nav-item mx-2">
-             <Link className="nav-link" to="/receptionist-schedules">
+             <Link className="nav-link" to="/receptionist-schedules"> {/* Kujdes: ruta e saktë */}
               Orari Recepsionistit
+            </Link>
+            </li>
+          )}
+
+          {/* Link vetëm për pastrues (Shto këtë!) */}
+          {userType?.toLowerCase() === "cleaner" && (
+            <li className="nav-item mx-2">
+             <Link className="nav-link" to="/cleaner/schedules"> {/* Kujdes: ruta e saktë */}
+              Orari Pastruesit
             </Link>
             </li>
           )}

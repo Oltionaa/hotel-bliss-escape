@@ -1,0 +1,174 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+
+function CleanerSchedule({ authToken }) {
+  const [mySchedules, setMySchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+
+  // Marrja e orareve të pastruesit
+  const fetchMySchedules = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    if (!authToken) {
+      setError("Tokeni i autorizimit nuk është i disponueshëm.");
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await axios.get('http://localhost:8000/api/cleaner/schedules/my', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      setMySchedules(res.data);
+    } catch (err) {
+      setError(
+        "Gabim gjatë ngarkimit të orareve tuaja: " +
+        (err.response?.data?.message || err.message || "Një gabim i panjohur ndodhi.")
+      );
+      console.error("Gabim gjatë ngarkimit të orareve të mia (pastrues):", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [authToken]);
+
+  // Ekzekutimi i fetchMySchedules kur komponenti montohet ose kur ndryshon fetchMySchedules
+  useEffect(() => {
+    fetchMySchedules();
+  }, [fetchMySchedules]);
+
+  // Formaton datën në formatin Shqiptar (DD.MM.YYYY)
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      // Përdor 'sq-AL' për formatin shqiptar
+      return date.toLocaleDateString('sq-AL', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch (e) {
+      console.error("Gabim në formatimin e datës:", dateString, e);
+      return 'N/A';
+    }
+  };
+
+  // Formaton orën në formatin HH:MM
+  const formatTime = (timeString) => {
+    if (!timeString) return 'N/A';
+    try {
+      // Shiko formatin e ardhur. Nqs është datë e plotë, nxirre orën.
+      // P.sh. "2025-06-01T08:00:00.000000Z" -> "08:00"
+      // Ose nqs është thjesht orë "08:00:00" -> "08:00"
+      if (timeString.includes('T') && timeString.includes(':')) {
+        const timePart = timeString.split('T')[1]; // Merr pjesën pas 'T'
+        return timePart.substring(0, 5); // Merr "HH:MM"
+      } else if (timeString.includes(':')) {
+        return timeString.substring(0, 5); // Nqs është vetëm "HH:MM:SS" ose "HH:MM"
+      }
+      return 'N/A'; // Nqs formati është i panjohur
+    } catch (e) {
+      console.error("Gabim në formatimin e orës:", timeString, e);
+      return 'N/A';
+    }
+  };
+
+  // Trajton ndryshimin e statusit të orarit (Completed/Canceled)
+  const handleToggleStatus = async (scheduleId, currentStatus) => {
+    // Ndrysho statusin: Completed -> Canceled, ose çdo tjetër -> Completed
+    let newStatus = currentStatus === 'Completed' ? 'Canceled' : 'Completed';
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await axios.put(
+        `http://localhost:8000/api/cleaner/schedules/${scheduleId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      // Përditëso gjendjen lokale të orareve
+      setMySchedules((prevSchedules) =>
+        prevSchedules.map((s) => (s.id === scheduleId ? { ...s, status: newStatus } : s))
+      );
+      setMessage(response.data.message || `Statusi u ndryshua në "${newStatus}".`);
+    } catch (err) {
+      setError(
+        "Gabim në përditësimin e statusit: " +
+        (err.response?.data?.message || err.message || "Një gabim i panjohur ndodhi.")
+      );
+      console.error("Gabim në përditësimin e statusit (pastrues):", err);
+    }
+  };
+
+  if (loading) return <p>Duke ngarkuar oraret...</p>;
+
+  return (
+    <div className="container mt-4">
+      <h4 className="mb-3">Oraret e Mia të Planifikuara</h4>
+
+      {/* Shfaq mesazhet e gabimit ose suksesit */}
+      {error && <div className="alert alert-danger mb-3">{error}</div>}
+      {message && <div className="alert alert-success mb-3">{message}</div>}
+
+      <div className="table-responsive">
+        <table className="table table-bordered table-striped table-hover">
+          <thead className="table-dark">
+            <tr>
+              <th>Data</th>
+              <th>Fillimi i Turnit</th>
+              <th>Fundi i Turnit</th>
+              <th>Statusi</th>
+              <th>Veprimet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mySchedules.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center">
+                  Nuk ka orare të planifikuara për ju.
+                </td>
+              </tr>
+            ) : (
+              mySchedules.map((schedule) => (
+                <tr key={schedule.id}>
+                  <td>{formatDate(schedule.work_date)}</td>
+                  <td>{formatTime(schedule.shift_start)}</td>
+                  <td>{formatTime(schedule.shift_end)}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        schedule.status === 'Planned'
+                          ? 'bg-info text-dark'
+                          : schedule.status === 'Completed'
+                          ? 'bg-success'
+                          : 'bg-danger'
+                      }`}
+                    >
+                      {schedule.status || 'N/A'}
+                    </span>
+                  </td>
+                  <td>
+                    {/* Butoni për ndryshimin e statusit, bëhet i paaktivuar nëse statusi është "Canceled" */}
+                    <button
+                      className={`btn btn-sm ${
+                        schedule.status === 'Completed' ? 'btn-warning' : 'btn-primary'
+                      }`}
+                      onClick={() => handleToggleStatus(schedule.id, schedule.status)}
+                      disabled={schedule.status === 'Canceled'} // Nuk mund të ndryshosh statusin nëse është anuluar
+                    >
+                      {schedule.status === 'Completed' ? 'Anulo Statusin' : 'Përfundo'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default CleanerSchedule;

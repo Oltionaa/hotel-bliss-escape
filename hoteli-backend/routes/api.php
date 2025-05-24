@@ -10,6 +10,7 @@ use App\Http\Controllers\{
     DashboardController,
     CheckoutController,
     ScheduleController, 
+    CleanerScheduleController
 };
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -39,6 +40,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/rooms', [CleanerController::class, 'getDirtyRooms']); // Merr dhomat që duhen pastruar
         Route::put('/rooms/{room}/clean', [CleanerController::class, 'markRoomAsClean']); // Shëno dhomën si të pastruar
         Route::get('/rooms/all', [CleanerController::class, 'getAllRooms']); // Të gjitha dhomat
+       
+         Route::get('/schedules/my', [CleanerScheduleController::class, 'getMySchedules']); // Oraret e pastruesit të kyçur
+        // Kjo rrugë poshtë mungonte ose ishte jashtë bllokut të duhur
+        Route::put('/schedules/{schedule}/status', [CleanerScheduleController::class, 'updateStatus']); // Ndrysho statusin e orarit të pastruesit
+
     });
 
 
@@ -66,4 +72,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
+
 });

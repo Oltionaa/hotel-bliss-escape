@@ -19,6 +19,7 @@ import UsersList from './UsersList';
 import CreateUser from './CreateUser';
 import EditUser from './EditUser';
 import ReceptionistSchedule from "./ReceptionistSchedule"; 
+import CleanerSchedule from './CleanerSchedule';
 
 function App() {
   const [rooms, setRooms] = useState([]);
@@ -226,6 +227,7 @@ function App() {
 
         <Route element={<CleanerRoute />}>
           <Route path="/cleaner-dashboard" element={<CleanerDashboard />} />
+           <Route path="/cleaner/schedules" element={<CleanerSchedule authToken={authToken} />} />
         </Route>
 
         <Route element={<ReceptionistRoute />}>
