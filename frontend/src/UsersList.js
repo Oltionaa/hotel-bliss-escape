@@ -34,7 +34,7 @@ const UsersList = () => {
       console.log('fetchUsers: Params:', params);
 
       await axios.get('http://localhost:8000/sanctum/csrf-cookie');
-      const response = await axios.get('http://localhost:8000/api/admin/users', {
+      const response = await axios.get('http://localhost:8000/api/admin/users-paginated', { // KJO ËSHTË LINJA E NDRYSHUAR!
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -42,8 +42,8 @@ const UsersList = () => {
       });
 
       console.log('fetchUsers: Response:', response.data);
-      setUsers(response.data.data?.data || []);
-      setMeta(response.data.data?.meta || {});
+      setUsers(response.data.data || []); // Laravel paginate kthen direkt "data" jo "data.data"
+      setMeta(response.data || {}); // Dhe meta është direkt në response.data
       setError(null);
     } catch (err) {
       console.error('fetchUsers: Error:', err.response?.data || err);

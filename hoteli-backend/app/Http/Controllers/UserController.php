@@ -194,4 +194,35 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Përdoruesi u fshi me sukses']);
     }
+      public function paginatedUsers(Request $request)
+    {
+        if ($unauthorized = $this->ensureIsAdmin()) {
+            return $unauthorized;
+        }
+
+        Log::info('Fetching paginated users', ['user_id' => Auth::id(), 'search' => $request->query('search'), 'role' => $request->query('role'), 'page' => $request->query('page')]);
+
+        $search = $request->query('search');
+        $role = $request->query('role');
+        $perPage = $request->query('per_page', 10); // Numri i elementeve për faqe, default 10
+
+        $query = User::query()->select('id', 'name', 'email', 'role', 'status');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($role) {
+            $query->where('role', $role);
+        }
+
+        // Kjo përdor paginate() dhe kthen strukturën 'data' dhe 'meta'
+        $users = $query->paginate($perPage);
+
+        return response()->json($users, 200);
+    }
+
 }

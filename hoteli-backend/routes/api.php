@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'dashboard']);
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users-paginated', [UserController::class, 'paginatedUsers']);
         Route::post('/users', [UserController::class, 'store']);
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::put('/users/{id}', [UserController::class, 'update']);
