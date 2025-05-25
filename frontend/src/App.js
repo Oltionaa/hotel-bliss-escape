@@ -20,6 +20,7 @@ import CreateUser from './CreateUser';
 import EditUser from './EditUser';
 import ReceptionistSchedule from "./ReceptionistSchedule"; 
 import CleanerSchedule from './CleanerSchedule';
+import AdminScheduleManager from './AdminScheduleManager';
 
 function App() {
   const [rooms, setRooms] = useState([]);
@@ -240,6 +241,7 @@ function App() {
           <Route path="/users" element={<UsersList />} />
           <Route path="/users/create" element={<CreateUser />} />
           <Route path="/users/edit/:id" element={<EditUser />} />
+          <Route path="/schedules" element={<AdminScheduleManager />} />
         </Route>
       </Routes>
     </div>

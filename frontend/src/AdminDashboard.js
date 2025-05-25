@@ -1,5 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, Alert } from 'react-bootstrap';
 import { Bar } from 'react-chartjs-2';
@@ -108,7 +108,6 @@ const AdminDashboard = () => {
     },
   };
 
-  // Map action types to translated messages
   const getActionTranslation = (action) => {
     const actionMap = {
       'cleaned room': 'Pastroi dhomën',
@@ -136,9 +135,20 @@ const AdminDashboard = () => {
                 <p className="card-text">Recepsionistë: {dashboardData.stats.receptionists}</p>
                 <p className="card-text">Pastrues: {dashboardData.stats.cleaners}</p>
                 <p className="card-text">Aktivë: {dashboardData.stats.active_users}</p>
-                <Link to="/users" className="btn btn-primary">
-                  Shiko Përdoruesit
-                </Link>
+                <div className="d-flex gap-2">
+                  <Link to="/users" className="btn btn-primary">
+                    Shiko Përdoruesit
+                  </Link>
+                  <Link
+                    to={{
+                      pathname: '/schedules',
+                      state: { authToken: localStorage.getItem('token') },
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    Menaxho Oraret
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

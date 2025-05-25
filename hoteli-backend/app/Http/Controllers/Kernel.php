@@ -45,7 +45,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\Role::class,
-
+      'restrict.to' => \App\Http\Middleware\RestrictToRole::class, // KY RRESHT DUHET TË JETË KËTU
     ];
 }
 ?>

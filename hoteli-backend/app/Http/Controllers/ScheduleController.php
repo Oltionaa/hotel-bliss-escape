@@ -3,85 +3,151 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use App\Models\ReceptionistSchedule; // Modeli i recepsionistit
-use App\Models\User; // Modeli User
+use App\Models\ReceptionistSchedule;
 
 class ScheduleController extends Controller
 {
     public function getMySchedules()
     {
         $user = Auth::user();
-
-        if (!$user || $user->role !== 'receptionist') {
-            Log::warning('Tentativë e paautorizuar për getMySchedules nga User ID: ' . ($user ? $user->id : 'N/A'));
-            return response()->json(['message' => 'Nuk jeni i autorizuar të shihni oraret tuaja. Kjo veprimtari kërkon rolin e recepsionistit.'], 403);
+        if (!$user) {
+            return response()->json(['message' => 'Nuk jeni i autentikuar.'], 401);
         }
 
         try {
-            $schedules = ReceptionistSchedule::where('receptionist_id', $user->id)
-                                             ->orderBy('work_date', 'asc')
-                                             ->get();
-
-            Log::info('Oraret e mia të recepsionistit u ngarkuan me sukses për ID: ' . $user->id);
+            $schedules = $user->role === 'admin'
+                ? ReceptionistSchedule::with('receptionist:id,name')->orderBy('work_date', 'asc')->get()
+                : ReceptionistSchedule::where('receptionist_id', $user->id)->orderBy('work_date', 'asc')->get();
             return response()->json($schedules);
         } catch (\Exception $e) {
-            Log::error('Gabim gjatë marrjes së orareve të mia: ' . $e->getMessage() . ' në ' . $e->getFile() . ':' . $e->getLine());
-            return response()->json(['message' => 'Ndodhi një gabim gjatë ngarkimit të orareve tuaja.'], 500);
+            Log::error('Gabim gjatë ngarkimit të orareve: ' . $e->getMessage());
+            return response()->json(['message' => 'Gabim gjatë marrjes së orareve.'], 500);
         }
     }
 
     public function getAllSchedules()
     {
         $user = Auth::user();
-
         if (!$user || ($user->role !== 'admin' && $user->role !== 'receptionist')) {
-            Log::warning('Tentativë e paautorizuar për getAllSchedules nga User ID: ' . ($user ? $user->id : 'N/A'));
-            return response()->json(['message' => 'Nuk jeni i autorizuar të shihni të gjitha oraret.'], 403);
+            return response()->json(['message' => 'Nuk keni leje për të parë të gjitha oraret.'], 403);
         }
 
         try {
-            $schedules = ReceptionistSchedule::with('receptionist:id,name')
-                                             ->orderBy('work_date', 'asc')
-                                             ->get();
-
-            Log::info('Të gjitha oraret e recepsionistëve u ngarkuan me sukses.');
+            $schedules = ReceptionistSchedule::with('receptionist:id,name')->orderBy('work_date', 'asc')->get();
             return response()->json($schedules);
         } catch (\Exception $e) {
-            Log::error('Gabim gjatë marrjes së të gjitha orareve: ' . $e->getMessage() . ' në ' . $e->getFile() . ':' . $e->getLine());
-            return response()->json(['message' => 'Ndodhi një gabim gjatë ngarkimit të të gjitha orareve.'], 500);
+            Log::error('Gabim gjatë ngarkimit të orareve: ' . $e->getMessage());
+            return response()->json(['message' => 'Gabim gjatë marrjes së orareve.'], 500);
         }
     }
 
-    public function updateStatus(Request $request, $scheduleId) // Marr $scheduleId si një numër të thjeshtë
+    public function updateStatus(Request $request, $scheduleId)
     {
-        // Gjej orarin manualisht
-        $receptionistSchedule = ReceptionistSchedule::find($scheduleId);
-
-        // Kontrollo nëse orari ekziston
-        if (!$receptionistSchedule) {
-            Log::warning('Orari me ID: ' . $scheduleId . ' nuk u gjet.');
-            return response()->json(['message' => 'Orari nuk u gjet.'], 404); // 404 Not Found
+        $user = Auth::user();
+        if (!$user || $user->role !== 'receptionist') {
+            return response()->json(['message' => 'Nuk keni leje për të ndryshuar statusin.'], 403);
         }
 
-        // KONTROLLI I AUTORIZIMIT ËSHTË HEQUR PLOTËSISHT KËTU!
-        // VETËM LOGJIKA E VALIDIMIT DHE RUAJTJES MBETET.
+        $schedule = ReceptionistSchedule::find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['message' => 'Orari nuk u gjet.'], 404);
+        }
+
+        if ($schedule->receptionist_id !== $user->id) {
+            return response()->json(['message' => 'Nuk mund të ndryshoni orarin e një recepsionisti tjetër.'], 403);
+        }
 
         $validator = Validator::make($request->all(), [
             'status' => 'required|string|in:Planned,Completed,Canceled',
         ]);
 
         if ($validator->fails()) {
-            Log::error('Gabim validimi në updateStatus: ' . json_encode($validator->errors()));
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $receptionistSchedule->status = $request->status;
-        $receptionistSchedule->save();
+        $schedule->status = $request->status;
+        $schedule->save();
+        return response()->json(['message' => 'Statusi u përditësua me sukses.', 'schedule' => $schedule], 200);
+    }
 
-        Log::info('Statusi i orarit u përditësua me sukses për ID: ' . $receptionistSchedule->id . ' në status: ' . $request->status);
-        return response()->json(['message' => 'Statusi i orarit u përditësua me sukses.', 'schedule' => $receptionistSchedule], 200);
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['message' => 'Nuk keni leje për të krijuar orare.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'receptionist_id' => 'required|exists:users,id',
+            'work_date' => 'required|date|after_or_equal:today',
+            'shift_start' => 'required|date_format:H:i',
+            'shift_end' => 'required|date_format:H:i|after:shift_start',
+            'status' => 'required|string|in:Planned,Completed,Canceled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $exists = ReceptionistSchedule::where('receptionist_id', $request->receptionist_id)
+            ->where('work_date', $request->work_date)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['message' => 'Orari për këtë recepsionist dhe datë ekziston tashmë.'], 409);
+        }
+
+        try {
+            $schedule = ReceptionistSchedule::create([
+                'receptionist_id' => $request->receptionist_id,
+                'work_date' => $request->work_date,
+                'shift_start' => $request->shift_start,
+                'shift_end' => $request->shift_end,
+                'status' => $request->status,
+            ]);
+            return response()->json(['message' => 'Orari u krijua me sukses.', 'schedule' => $schedule], 201);
+        } catch (\Exception $e) {
+            Log::error('Gabim gjatë krijimit të orarit: ' . $e->getMessage());
+            return response()->json(['message' => 'Gabim gjatë krijimit të orarit.'], 500);
+        }
+    }
+
+    public function update(Request $request, $scheduleId)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['message' => 'Nuk keni leje për të përditësuar orare.'], 403);
+        }
+
+        $schedule = ReceptionistSchedule::find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['message' => 'Orari nuk u gjet.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'receptionist_id' => 'sometimes|exists:users,id',
+            'work_date' => 'sometimes|date|after_or_equal:today',
+            'shift_start' => 'sometimes|date_format:H:i',
+            'shift_end' => 'sometimes|date_format:H:i|after:shift_start',
+            'status' => 'sometimes|string|in:Planned,Completed,Canceled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+    $schedule->update($request->only(['receptionist_id', 'work_date', 'shift_start', 'shift_end', 'status']));
+
+    // SHTO KËTË RRESHT: Ngarko marrëdhënien 'receptionist'
+    $schedule->load('receptionist');
+
+    return response()->json(['message' => 'Orari u përditësua me sukses.', 'schedule' => $schedule], 200);
+} catch (\Exception $e) {
+    // ... kodi ekzistues ...
+}
     }
 }

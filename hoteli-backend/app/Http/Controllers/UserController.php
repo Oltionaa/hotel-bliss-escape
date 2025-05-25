@@ -49,41 +49,31 @@ class UserController extends Controller
     }
 
     public function index(Request $request)
-    {
-        if ($unauthorized = $this->ensureIsAdmin()) {
-            return $unauthorized;
-        }
-
-        Log::info('Fetching users', ['user_id' => Auth::id(), 'search' => $request->query('search'), 'role' => $request->query('role')]);
-
-        $search = $request->query('search');
-        $role = $request->query('role');
-
-        $query = User::query();
-
-        if ($search) {
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-        }
-
-        if ($role) {
-            $query->where('role', $role);
-        }
-
-        $users = $query->paginate(10);
-
-        return response()->json([
-            'data' => [
-                'data' => $users->items(),
-                'meta' => [
-                    'current_page' => $users->currentPage(),
-                    'last_page' => $users->lastPage(),
-                    'per_page' => $users->perPage(),
-                    'total' => $users->total(),
-                ],
-            ],
-        ]);
+{
+    if ($unauthorized = $this->ensureIsAdmin()) {
+        return $unauthorized;
     }
+
+    Log::info('Fetching users', ['user_id' => Auth::id(), 'search' => $request->query('search'), 'role' => $request->query('role')]);
+
+    $search = $request->query('search');
+    $role = $request->query('role');
+
+    $query = User::query()->select('id', 'name', 'email', 'role', 'status');
+
+    if ($search) {
+        $query->where('name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+    }
+
+    if ($role) {
+        $query->where('role', $role);
+    }
+
+    $users = $query->get();
+
+    return response()->json($users, 200);
+}
 
     public function store(Request $request)
     {
