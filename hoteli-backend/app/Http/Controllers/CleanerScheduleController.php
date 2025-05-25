@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use App\Models\CleanerSchedule;
+use App\Models\CleanerSchedule; // Sigurohu që importon modelin e duhur
+use Illuminate\Validation\ValidationException; // Importo këtë
 
 class CleanerScheduleController extends Controller
 {
@@ -39,10 +40,8 @@ class CleanerScheduleController extends Controller
             return response()->json(['message' => 'Nuk keni leje për të ndryshuar statusin.'], 403);
         }
 
-        $schedule = CleanerSchedule::find($scheduleId);
-        if (!$schedule) {
-            return response()->json(['message' => 'Orari nuk u gjet.'], 404);
-        }
+        // Përdor findOrFail për të kapur automatikisht 404
+        $schedule = CleanerSchedule::findOrFail($scheduleId);
 
         if ($user->role === 'cleaner' && $schedule->cleaner_id !== $user->id) {
             return response()->json(['message' => 'Nuk mund të ndryshoni orarin e një pastruesi tjetër.'], 403);
@@ -102,55 +101,57 @@ class CleanerScheduleController extends Controller
             return response()->json(['message' => 'Gabim gjatë krijimit të orarit.'], 500);
         }
     }
-public function update(Request $request, CleanerSchedule $cleanerSchedule)
-{
-    $user = Auth::user();
-    if (!$user || $user->role !== 'admin') { // Vetëm admin mund të modifikojë oraret e pastruesve (ose shtoni logjikë specifike nëse pastruesi mund të modifikojë oraret e veta).
-        return response()->json(['message' => 'Nuk keni leje për të përditësuar orarin.'], 403);
+
+    // METODA UPDATE E PERDITESUAR
+    public function update(Request $request, CleanerSchedule $cleanerSchedule) // Route Model Binding
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['message' => 'Nuk keni leje për të përditësuar orarin.'], 403);
+        }
+
+        // Orari gjendet automatikisht nga Route Model Binding, nuk ka nevojë për kontroll manual.
+
+        try {
+            // Validimi i të dhënave të pranuara
+            $validatedData = $request->validate([
+                'cleaner_id' => 'sometimes|exists:users,id', // Kjo duhet të jetë 'sometimes'
+                'work_date' => 'sometimes|date_format:Y-m-d', // Kujdes me formatin e datës
+                'shift_start' => 'sometimes|date_format:H:i',
+                'shift_end' => 'sometimes|date_format:H:i|after:shift_start',
+                'status' => 'sometimes|string|in:Planned,Completed,Canceled',
+            ]);
+
+            // Kontroll shtesë për oraret ekzistuese (nëse ndryshohet data ose pastruesi)
+            if (isset($validatedData['cleaner_id']) || isset($validatedData['work_date'])) {
+                $cleanerId = $validatedData['cleaner_id'] ?? $cleanerSchedule->cleaner_id;
+                $workDate = $validatedData['work_date'] ?? $cleanerSchedule->work_date;
+
+                $exists = CleanerSchedule::where('cleaner_id', $cleanerId)
+                    ->where('work_date', $workDate)
+                    ->where('id', '!=', $cleanerSchedule->id) // Përjashto orarin aktual
+                    ->exists();
+
+                if ($exists) {
+                    return response()->json(['message' => 'Orari për këtë pastrues dhe datë ekziston tashmë.'], 409);
+                }
+            }
+
+            // Përditëso orarin me të dhënat e reja
+            $cleanerSchedule->update($validatedData); // Përdor update me array
+
+            // Ngarko marrëdhënien 'cleaner' për t'u kthyer në përgjigje
+            $cleanerSchedule->load('cleaner');
+
+            return response()->json(['message' => 'Orari u përditësua me sukses.', 'schedule' => $cleanerSchedule], 200);
+
+        } catch (ValidationException $e) {
+            // Kapi gabimet e validimit dhe ktheji ato
+            return response()->json(['errors' => $e->errors(), 'message' => 'Gabim validimi gjatë përditësimit të orarit.'], 422);
+        } catch (\Exception $e) {
+            // Kapi gabime të tjera të papritura, logo dhe kthe një mesazh gabimi
+            Log::error('Gabim gjatë përditësimit të orarit të pastruesit: ' . $e->getMessage());
+            return response()->json(['message' => 'Gabim gjatë përditësimit të orarit.', 'error' => $e->getMessage()], 500);
+        }
     }
-
-    // Sigurohu që orari i përket një pastruesi, nëse e modifikon një admin. (Opsionale, por e mirë)
-    // Nëse pastruesi modifikon orarin e vet, duhet të jetë vetëm statusi.
-    // Për momentin, supozojmë se vetëm admin modifikon të gjitha fushat.
-
-    $validatedData = $request->validate([
-        'cleaner_id' => 'required|exists:users,id',
-        'work_date' => 'required|date',
-        'shift_start' => 'required|date_format:H:i',
-        'shift_end' => 'required|date_format:H:i|after:shift_start',
-        'status' => 'required|string|in:Planned,Completed,Canceled', // Shto 'string' për qartësi
-    ]);
-
-    // Këtu, gjithashtu duhet të sigurohemi që `cleanerSchedule` ekziston, megjithëse Route Model Binding zakonisht e bën këtë.
-    // Megjithatë, një kontroll i shpejtë nuk dëmton.
-    if (!$cleanerSchedule) {
-        return response()->json(['message' => 'Orari nuk u gjet.'], 404);
-    }
-
-    // Kontroll shtesë: A ka ndonjë orar tjetër ekzistues për këtë pastrues dhe datë, përveç atij që po modifikojmë?
-    // Kjo është e rëndësishme sepse `store` ka një kontroll të tillë.
-    $exists = CleanerSchedule::where('cleaner_id', $validatedData['cleaner_id'])
-        ->where('work_date', $validatedData['work_date'])
-        ->where('id', '!=', $cleanerSchedule->id) // Përjashto orarin aktual
-        ->exists();
-
-    if ($exists) {
-        return response()->json(['message' => 'Orari për këtë pastrues dhe datë ekziston tashmë.'], 409);
-    }
-
-    try {
-        $cleanerSchedule->cleaner_id = $validatedData['cleaner_id'];
-        $cleanerSchedule->work_date = $validatedData['work_date'];
-        $cleanerSchedule->shift_start = $validatedData['shift_start'];
-        $cleanerSchedule->shift_end = $validatedData['shift_end'];
-        $cleanerSchedule->status = $validatedData['status'];
-        $cleanerSchedule->save();
-
-        return response()->json(['message' => 'Orari u përditësua me sukses.', 'schedule' => $cleanerSchedule], 200);
-    } catch (\Exception $e) {
-        Log::error('Gabim gjatë përditësimit të orarit të pastruesit: ' . $e->getMessage());
-        return response()->json(['message' => 'Gabim gjatë përditësimit të orarit.'], 500);
-    }
-}
-
 }

@@ -63,6 +63,8 @@ function AdminScheduleManager() {
                     headers: { Authorization: `Bearer ${authToken}` },
                 }),
                 axios.get('http://localhost:8000/api/cleaner/schedules/my', {
+                    // Kjo API duhet të jetë gjithashtu 'all' nëse doni të shihni të gjitha oraret e pastruesve si admin
+                    // ose duhet të krijohet një endpoint i ri si p.sh. '/api/admin/cleaner/schedules/all'
                     headers: { Authorization: `Bearer ${authToken}` },
                 }),
                 axios.get('http://localhost:8000/api/admin/users', {
@@ -74,11 +76,15 @@ function AdminScheduleManager() {
             console.log('receptionistRes.data:', receptionistRes.data);
             console.log('cleanerRes.data:', cleanerRes.data);
 
-            const usersData = Array.isArray(usersRes.data?.data?.data)
-                ? usersRes.data.data.data
+            // KËTU ËSHTË NDERHYRJA KRYESORE!
+            // Bazuar në console.log të dhënë, usersRes.data është direkt array-i me përdorues.
+            const usersData = Array.isArray(usersRes.data)
+                ? usersRes.data
                 : [];
+
             setReceptionistSchedules(Array.isArray(receptionistRes.data) ? receptionistRes.data : []);
             setCleanerSchedules(Array.isArray(cleanerRes.data) ? cleanerRes.data : []);
+            // Filtrimi siguron që vetëm recepsionistët dhe pastruesit shfaqen në dropdown.
             setUsers(usersData.filter(user => ['receptionist', 'cleaner'].includes(user.role)));
         } catch (err) {
             console.error('Gabim gjatë ngarkimit të të dhënave:', err);
@@ -112,6 +118,8 @@ function AdminScheduleManager() {
             setIsEditing(true);
             setCurrentSchedule(schedule);
             setFormData({
+                // Kur modifikojmë, user_id nuk duhet të ndryshohet ose të shfaqet si zgjedhje.
+                // Megjithatë, mund ta mbajmë në state për referencë në API call.
                 user_id: String(schedule.receptionist_id || schedule.cleaner_id || ''),
                 work_date: schedule.work_date ? schedule.work_date.split('T')[0] : '',
                 shift_start: schedule.shift_start ? formatTimeForInput(schedule.shift_start) : '',
@@ -123,7 +131,7 @@ function AdminScheduleManager() {
             setIsEditing(false);
             setCurrentSchedule(null);
             setFormData({
-                user_id: '',
+                user_id: '', // Bosh kur krijojmë të re
                 work_date: '',
                 shift_start: '',
                 shift_end: '',
@@ -144,18 +152,23 @@ function AdminScheduleManager() {
             return;
         }
 
-        if (!formData.user_id) {
+        // Kjo kontroll do të ekzekutohet vetëm kur krijojmë orar të ri
+        if (!isEditing && !formData.user_id) {
             setError('Ju lutem zgjidhni një përdorues.');
             return;
         }
-const url = formData.type === 'receptionist'
+
+        const url = formData.type === 'receptionist'
             ? isEditing
-                ? `http://localhost:8000/api/admin/receptionist/schedules/${currentSchedule?.id}` // NDREQUR PËR RECEPTIONIST UPDATE
-                : `http://localhost:8000/api/admin/receptionist/schedules` // NDREQUR PËR RECEPTIONIST CREATE
+                ? `http://localhost:8000/api/admin/receptionist/schedules/${currentSchedule?.id}`
+                : `http://localhost:8000/api/admin/receptionist/schedules`
             : isEditing
-                ? `http://localhost:8000/api/admin/cleaner/schedules/${currentSchedule?.id}` // KORRIGJUAR PËR CLEANER UPDATE
-                : `http://localhost:8000/api/admin/cleaner/schedules`; // Kjo mbetet për POST të cleaner
+                ? `http://localhost:8000/api/admin/cleaner/schedules/${currentSchedule?.id}`
+                : `http://localhost:8000/api/admin/cleaner/schedules`;
+
         const data = {
+            // Për krijim, user_id është thelbësor. Për modifikim, shpesh nuk është i nevojshëm
+            // në body, por nuk dëmton nëse API e lejon si 'sometimes'.
             [formData.type === 'receptionist' ? 'receptionist_id' : 'cleaner_id']: formData.user_id,
             work_date: formData.work_date,
             shift_start: formData.shift_start,
@@ -205,8 +218,11 @@ const url = formData.type === 'receptionist'
             } else if (err.response?.status === 404) {
                 setError('Orari nuk u gjet. Ju lutem kontrolloni nëse orari ekziston.');
             } else if (err.response?.status === 422) {
-                setError('Të dhënat e dhëna janë të pavlefshme. Kontrolloni fushat.');
-            } else {
+                setError(err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : 'Të dhënat e dhëna janë të pavlefshme. Kontrolloni fushat.');
+            } else if (err.response?.status === 409) {
+                 setError(err.response?.data?.message || 'Orari për këtë përdorues dhe datë ekziston tashmë.');
+            }
+            else {
                 setError(err.response?.data?.message || err.response?.data?.error || 'Gabim gjatë ruajtjes së orarit.');
             }
         }
@@ -370,12 +386,35 @@ const url = formData.type === 'receptionist'
                                 name="type"
                                 value={formData.type}
                                 onChange={handleInputChange}
-                                disabled={isEditing}
+                                disabled={isEditing} // Kur modifikojmë, nuk e ndryshojmë llojin (receptionist/cleaner)
                             >
                                 <option value="receptionist">Recepsionist</option>
                                 <option value="cleaner">Pastrues</option>
                             </Form.Select>
                         </Form.Group>
+
+                        {/* Kjo pjesë shfaqet vetëm kur NUK jemi në modalin e modifikimit */}
+                        {!isEditing && (
+                            <Form.Group className="mb-3">
+                                <Form.Label>{formData.type === 'receptionist' ? 'Recepsionisti' : 'Pastruesi'}</Form.Label>
+                                <Form.Select
+                                    name="user_id"
+                                    value={formData.user_id}
+                                    onChange={handleInputChange}
+                                    required // Kjo bën që fusha të jetë e detyrueshme vetëm kur shfaqet
+                                >
+                                    <option value="">Zgjidhni një {formData.type === 'receptionist' ? 'recepsionist' : 'pastrues'}</option>
+                                    {users
+                                        .filter(user => user.role === formData.type)
+                                        .map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                </Form.Select>
+                            </Form.Group>
+                        )}
+
                         <Form.Group className="mb-3">
                             <Form.Label>Data</Form.Label>
                             <Form.Control
