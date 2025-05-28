@@ -10,16 +10,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException; // Për të kapur gabimet e validimit
 
-/**
- * @OA\Tag(
- * name="Authentication",
- * description="Operacionet API për regjistrimin e përdoruesve"
- * )
- * @OA\Tag(
- * name="User Management (Admin)",
- * description="Operacionet API për menaxhimin e përdoruesve nga adminët"
- * )
- */
 class UserController extends Controller
 {
     /**
@@ -40,51 +30,10 @@ class UserController extends Controller
         return null;
     }
 
-    /**
-     * @OA\Post(
-     * path="/api/register",
-     * operationId="registerUser",
-     * tags={"Authentication"},
-     * summary="Regjistron një përdorues të ri",
-     * description="Regjistron një përdorues të ri me rol 'user' si default. Nuk kërkon autentifikim.",
-     * @OA\RequestBody(
-     * required=true,
-     * description="Të dhënat e regjistrimit të përdoruesit",
-     * @OA\JsonContent(
-     * required={"name", "email", "password", "password_confirmation"},
-     * @OA\Property(property="name", type="string", example="Jane Doe"),
-     * @OA\Property(property="email", type="string", format="email", example="jane.doe@example.com"),
-     * @OA\Property(property="password", type="string", format="password", example="password123"),
-     * @OA\Property(property="password_confirmation", type="string", format="password", example="password123"),
-     * @OA\Property(property="role", type="string", enum={"admin", "receptionist", "cleaner", "user"}, example="user", description="Roli i përdoruesit (opsional, default 'user')")
-     * )
-     * ),
-     * @OA\Response(
-     * response=201,
-     * description="Përdoruesi u regjistrua me sukses",
-     * @OA\JsonContent(
-     * @OA\Property(property="message", type="string", example="User registered successfully!"),
-     * @OA\Property(
-     * property="user",
-     * type="object",
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Jane Doe"),
-     * @OA\Property(property="email", type="string", example="jane.doe@example.com"),
-     * @OA\Property(property="role", type="string", example="user"),
-     * @OA\Property(property="status", type="string", example="active"),
-     * @OA\Property(property="created_at", type="string", format="date-time")
-     * )
-     * )
-     * ),
-     * @OA\Response(
-     * response=422,
-     * description="Gabim validimi",
-     * @OA\JsonContent(
-     * @OA\Property(property="errors", type="object", example={"email": {"The email has already been taken."}})
-     * )
-     * )
-     * )
-     */
+    // Metoda 'register' është zhvendosur ose supozohet të jetë në AuthController.
+    // Anotacionet Swagger për '/api/register' duhet të jenë vetëm në AuthController.
+    // Kjo metodë 'register' në UserController nuk do të dokumentohet nga Swagger
+    // për të shmangur konfliktin.
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -134,29 +83,23 @@ class UserController extends Controller
      * description="Lista e përdoruesve u mor me sukses",
      * @OA\JsonContent(
      * type="array",
-     * @OA\Items(
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Admin User"),
-     * @OA\Property(property="email", type="string", example="admin@example.com"),
-     * @OA\Property(property="role", type="string", example="admin"),
-     * @OA\Property(property="status", type="string", example="active")
-     * )
+     * @OA\Items(ref="#/components/schemas/UserResponse")
      * )
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Veprim i paautorizuar")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=500,
-     * description="Gabim serveri"
+     * description="Gabim serveri",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * )
      * )
      */
@@ -213,35 +156,23 @@ class UserController extends Controller
      * description="Përdoruesi u krijua me sukses",
      * @OA\JsonContent(
      * @OA\Property(property="message", type="string", example="User created successfully!"),
-     * @OA\Property(
-     * property="user",
-     * type="object",
-     * @OA\Property(property="id", type="integer", example=2),
-     * @OA\Property(property="name", type="string", example="New Receptionist"),
-     * @OA\Property(property="email", type="string", example="new.receptionist@example.com"),
-     * @OA\Property(property="role", type="string", example="receptionist"),
-     * @OA\Property(property="status", type="string", example="active"),
-     * @OA\Property(property="created_at", type="string", format="date-time")
-     * )
+     * @OA\Property(ref="#/components/schemas/UserResponse", property="user")
      * )
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Veprim i paautorizuar")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=422,
      * description="Gabim validimi",
-     * @OA\JsonContent(
-     * @OA\Property(property="errors", type="object", example={"email": {"The email has already been taken."}})
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ValidationErrorResponse")
      * )
      * )
      */
@@ -273,14 +204,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User created successfully!',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-            ],
+            'user' => $user->only(['id', 'name', 'email', 'role', 'status', 'created_at']),
         ], 201);
     }
 
@@ -304,32 +228,23 @@ class UserController extends Controller
      * description="Përdoruesi u mor me sukses",
      * @OA\JsonContent(
      * @OA\Property(property="message", type="string", example="User retrieved successfully!"),
-     * @OA\Property(
-     * property="user",
-     * type="object",
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Admin User"),
-     * @OA\Property(property="email", type="string", example="admin@example.com"),
-     * @OA\Property(property="role", type="string", example="admin"),
-     * @OA\Property(property="status", type="string", example="active"),
-     * @OA\Property(property="created_at", type="string", format="date-time")
-     * )
+     * @OA\Property(ref="#/components/schemas/UserResponse", property="user")
      * )
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Veprim i paautorizuar")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=404,
-     * description="Përdoruesi nuk u gjet"
+     * description="Përdoruesi nuk u gjet",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse", example={"message": "No query results for model [App\\Models\\User] 1"})
      * )
      * )
      */
@@ -343,14 +258,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User retrieved successfully!',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-            ],
+            'user' => $user->only(['id', 'name', 'email', 'role', 'status', 'created_at']),
         ]);
     }
 
@@ -386,39 +294,28 @@ class UserController extends Controller
      * description="Përdoruesi u përditësua me sukses",
      * @OA\JsonContent(
      * @OA\Property(property="message", type="string", example="User updated successfully!"),
-     * @OA\Property(
-     * property="user",
-     * type="object",
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Updated Admin"),
-     * @OA\Property(property="email", type="string", example="updated.admin@example.com"),
-     * @OA\Property(property="role", type="string", example="admin"),
-     * @OA\Property(property="status", type="string", example="inactive"),
-     * @OA\Property(property="created_at", type="string", format="date-time")
-     * )
+     * @OA\Property(ref="#/components/schemas/UserResponse", property="user")
      * )
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Veprim i paautorizuar")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=404,
-     * description="Përdoruesi nuk u gjet"
+     * description="Përdoruesi nuk u gjet",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse", example={"message": "No query results for model [App\\Models\\User] 1"})
      * ),
      * @OA\Response(
      * response=422,
      * description="Gabim validimi",
-     * @OA\JsonContent(
-     * @OA\Property(property="errors", type="object", example={"email": {"The email has already been taken."}})
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ValidationErrorResponse")
      * )
      * )
      */
@@ -451,14 +348,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User updated successfully!',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-            ],
+            'user' => $user->only(['id', 'name', 'email', 'role', 'status', 'created_at']),
         ]);
     }
 
@@ -486,18 +376,18 @@ class UserController extends Controller
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin ose tentativë për të fshirë veten)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Nuk mund të fshini veten!")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=404,
-     * description="Përdoruesi nuk u gjet"
+     * description="Përdoruesi nuk u gjet",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse", example={"message": "No query results for model [App\\Models\\User] 2"})
      * )
      * )
      */
@@ -557,13 +447,7 @@ class UserController extends Controller
      * response=200,
      * description="Lista e paginuar e përdoruesve u mor me sukses",
      * @OA\JsonContent(
-     * @OA\Property(property="data", type="array", @OA\Items(
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="User One"),
-     * @OA\Property(property="email", type="string", example="user1@example.com"),
-     * @OA\Property(property="role", type="string", example="user"),
-     * @OA\Property(property="status", type="string", example="active")
-     * )),
+     * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/UserResponse")),
      * @OA\Property(property="meta", type="object", description="Metadata e paginimit",
      * @OA\Property(property="current_page", type="integer", example=1),
      * @OA\Property(property="from", type="integer", example=1),
@@ -578,14 +462,13 @@ class UserController extends Controller
      * ),
      * @OA\Response(
      * response=401,
-     * description="Pa autentifikim"
+     * description="Pa autentifikim",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * ),
      * @OA\Response(
      * response=403,
      * description="Veprim i paautorizuar (jo admin)",
-     * @OA\JsonContent(
-     * @OA\Property(property="error", type="string", example="Veprim i paautorizuar")
-     * )
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
      * )
      * )
      */

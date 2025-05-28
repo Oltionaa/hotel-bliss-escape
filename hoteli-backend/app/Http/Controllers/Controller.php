@@ -20,6 +20,11 @@ use Illuminate\Routing\Controller as BaseController;
  * )
  * )
  *
+ * @OA\Server(
+ * url=L5_SWAGGER_CONST_HOST,
+ * description="Hotel Management API Server"
+ * )
+ *
  * @OA\SecurityScheme(
  * securityScheme="bearerAuth",
  * in="header",
@@ -31,6 +36,33 @@ use Illuminate\Routing\Controller as BaseController;
  *
  * @OA\Components(
  * schemas={
+ *
+ * @OA\Schema(
+ * schema="ValidationErrorResponse",
+ * title="Gabime Validimi",
+ * description="Përgjigje standarde për gabimet e validimit",
+ * @OA\Property(
+ * property="message",
+ * type="string",
+ * example="The given data was invalid."
+ * ),
+ * @OA\Property(
+ * property="errors",
+ * type="object",
+ * additionalProperties=@OA\AdditionalProperties(
+ * type="array",
+ * @OA\Items(type="string")
+ * )
+ * )
+ * ),
+ *
+ * @OA\Schema(
+ * schema="ErrorResponse",
+ * title="Error Response",
+ * description="Përgjigje standarde për gabimet (përdoret kur nuk ka gabime validimi)",
+ * @OA\Property(property="message", type="string", example="Një gabim ndodhi."),
+ * @OA\Property(property="error", type="string", nullable=true, example="Detaje shtesë gabimi (opsionale).")
+ * ),
  *
  * @OA\Schema(
  * schema="ReceptionistSchedule",
@@ -89,6 +121,37 @@ use Illuminate\Routing\Controller as BaseController;
  * @OA\Property(property="paid_at", type="string", format="date-time", example="2024-09-08 10:30:00"),
  * @OA\Property(property="created_at", type="string", format="date-time", readOnly="true"),
  * @OA\Property(property="updated_at", type="string", format="date-time", readOnly="true")
+ * ),
+ *
+ * @OA\Schema(
+ * schema="UserResponse",
+ * title="User Response",
+ * description="Modeli i përgjigjes së përdoruesit",
+ * @OA\Property(property="id", type="integer", readOnly="true", example=1),
+ * @OA\Property(property="name", type="string", example="John Doe"),
+ * @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
+ * @OA\Property(property="role", type="string", example="user", enum={"admin", "receptionist", "cleaner", "user"}),
+ * @OA\Property(property="status", type="string", example="active", enum={"active", "inactive"}),
+ * @OA\Property(property="created_at", type="string", format="date-time", readOnly="true", example="2024-01-01T12:00:00.000000Z"),
+ * @OA\Property(property="updated_at", type="string", format="date-time", readOnly="true", example="2024-01-01T12:00:00.000000Z")
+ * ),
+ *
+ * @OA\Schema(
+ * schema="CleanerScheduleModel",
+ * title="Cleaner Schedule Model",
+ * description="Modeli i orarit të pastruesit",
+ * @OA\Property(property="id", type="integer", readOnly="true", example=1, description="ID e orarit"),
+ * @OA\Property(property="cleaner_id", type="integer", description="ID e pastruesit", example=5),
+ * @OA\Property(property="work_date", type="string", format="date", description="Data e punës (YYYY-MM-DD)", example="2024-06-15"),
+ * @OA\Property(property="shift_start", type="string", format="time", description="Ora e fillimit të turnit (HH:MM)", example="08:00"),
+ * @OA\Property(property="shift_end", type="string", format="time", description="Ora e mbarimit të turnit (HH:MM)", example="16:00"),
+ * @OA\Property(property="status", type="string", enum={"Planned", "Completed", "Canceled"}, example="Planned", description="Statusi i orarit"),
+ * @OA\Property(property="created_at", type="string", format="date-time", readOnly="true", description="Data e krijimit"),
+ * @OA\Property(property="updated_at", type="string", format="date-time", readOnly="true", description="Data e fundit e përditësimit"),
+ * @OA\Property(property="cleaner", type="object", description="Detajet e pastruesit (nëse ngarkohen)",
+ * @OA\Property(property="id", type="integer", example=5),
+ * @OA\Property(property="name", type="string", example="Cleaner Name")
+ * )
  * )
  * }
  * )

@@ -12,7 +12,1210 @@
         },
         "version": "1.0.0"
     },
+    "servers": [
+        {
+            "url": "http://my-default-host.com",
+            "description": "Hotel Management API Server"
+        }
+    ],
     "paths": {
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Identifikimi i përdoruesit",
+                "description": "Identifikon një përdorues me email dhe fjalëkalim, duke gjeneruar një token autentifikimi.",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "description": "Kredencialet e përdoruesit",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "description": "Adresa e emailit të përdoruesit",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john.doe@example.com"
+                                    },
+                                    "password": {
+                                        "description": "Fjalëkalimi i përdoruesit",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Identifikimi i suksesshëm",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "John Doe"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "john.doe@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "user"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "sanctum_token_example_string_here"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Kredenciale të pavlefshme",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid credentials"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Llogaria joaktive",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account is inactive"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Gabime validimi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Regjistrimi i përdoruesit",
+                "description": "Regjistron një përdorues të ri dhe gjeneron një token autentifikimi.",
+                "operationId": "registerUser",
+                "requestBody": {
+                    "description": "Të dhënat e regjistrimit të përdoruesit",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jane Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jane.doe@example.com"
+                                    },
+                                    "phone": {
+                                        "description": "Numri i telefonit i përdoruesit (opsional)",
+                                        "type": "string",
+                                        "example": "+38344123456",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "securepassword"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "securepassword"
+                                    },
+                                    "role": {
+                                        "description": "Roli i përdoruesit (parazgjedhur 'user')",
+                                        "type": "string",
+                                        "enum": [
+                                            "admin",
+                                            "receptionist",
+                                            "cleaner",
+                                            "user"
+                                        ],
+                                        "example": "user",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Regjistrimi i suksesshëm",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User registered successfully"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Jane Doe"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "jane.doe@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "user"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "sanctum_token_example_string_here"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Gabime validimi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Çkyçja e përdoruesit",
+                "description": "Çkyç një përdorues duke fshirë tokenin aktual të autentifikimit. Kërkon autentifikim.",
+                "operationId": "logoutUser",
+                "responses": {
+                    "200": {
+                        "description": "Çkyçja e suksesshme",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Nuk u gjet token aktiv",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No active token found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim gjatë çkyçjes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to logout"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Detajet e gabimit"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/dirty-rooms": {
+            "get": {
+                "tags": [
+                    "Cleaner Operations"
+                ],
+                "summary": "Merr dhomat e pista",
+                "description": "Kthen një listë të të gjitha dhomave me status 'dirty'. Vetëm pastruesit mund ta bëjnë këtë.",
+                "operationId": "getDirtyRooms",
+                "responses": {
+                    "200": {
+                        "description": "Lista e dhomave të pista u mor me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "room_number": {
+                                                "type": "string",
+                                                "example": "103"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Dhoma Deluxe"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Dhomë e dyfishtë me pamje nga deti."
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "available",
+                                                    "occupied",
+                                                    "dirty",
+                                                    "maintenance",
+                                                    "clean"
+                                                ],
+                                                "example": "dirty"
+                                            },
+                                            "image": {
+                                                "type": "string",
+                                                "example": "http://example.com/images/room103.jpg",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo pastrues)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/mark-clean/{roomId}": {
+            "post": {
+                "tags": [
+                    "Cleaner Operations"
+                ],
+                "summary": "Shëno dhomën si të pastër",
+                "description": "Ndërron statusin e një dhome nga 'dirty' në 'clean' dhe regjistron pastruesin. Vetëm pastruesit mund ta bëjnë këtë.",
+                "operationId": "markRoomAsClean",
+                "parameters": [
+                    {
+                        "name": "roomId",
+                        "in": "path",
+                        "description": "ID e dhomës për t'u shënuar si e pastër",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dhoma u shënua si e pastër me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Room marked as clean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo pastrues)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Dhoma nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Room not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/all-rooms": {
+            "get": {
+                "tags": [
+                    "Cleaner Operations"
+                ],
+                "summary": "Merr të gjitha dhomat (për pastrues)",
+                "description": "Kthen një listë të të gjitha dhomave. Vetëm pastruesit mund ta bëjnë këtë.",
+                "operationId": "getAllRoomsForCleaner",
+                "responses": {
+                    "200": {
+                        "description": "Lista e dhomave u mor me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Room"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo pastrues)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/schedules": {
+            "get": {
+                "tags": [
+                    "Cleaner Schedule Management"
+                ],
+                "summary": "Merr oraret e pastruesit të autentifikuar ose të gjitha oraret (për admin)",
+                "description": "Kthen oraret e pastruesit të autentifikuar. Adminët mund të shohin të gjitha oraret.",
+                "operationId": "getMyCleanerSchedules",
+                "responses": {
+                    "200": {
+                        "description": "Lista e orareve u mor me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CleanerScheduleModel"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo pastrues ose admin)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Nuk keni leje për të parë oraret."
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Cleaner Schedule Management"
+                ],
+                "summary": "Krijo një orar të ri pastruesi (vetëm për admin)",
+                "description": "Krijon një orar të ri për një pastrues specifik. Vetëm adminët mund ta bëjnë këtë.",
+                "operationId": "createCleanerSchedule",
+                "requestBody": {
+                    "description": "Të dhënat e orarit të ri",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "cleaner_id",
+                                    "work_date",
+                                    "shift_start",
+                                    "shift_end",
+                                    "status"
+                                ],
+                                "properties": {
+                                    "cleaner_id": {
+                                        "description": "ID e pastruesit",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "work_date": {
+                                        "description": "Data e punës (YYYY-MM-DD)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-07-01"
+                                    },
+                                    "shift_start": {
+                                        "description": "Ora e fillimit (HH:MM)",
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "09:00"
+                                    },
+                                    "shift_end": {
+                                        "description": "Ora e mbarimit (HH:MM)",
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "17:00"
+                                    },
+                                    "status": {
+                                        "description": "Statusi i orarit",
+                                        "type": "string",
+                                        "enum": [
+                                            "Planned",
+                                            "Completed",
+                                            "Canceled"
+                                        ],
+                                        "example": "Planned"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Orari u krijua me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Orari u krijua me sukses."
+                                        },
+                                        "schedule": {
+                                            "$ref": "#/components/schemas/CleanerScheduleModel"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo admin)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Nuk keni leje për të krijuar orare."
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Konflikt (orari ekziston tashmë)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Orari për këtë pastrues dhe datë ekziston tashmë."
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Gabim validimi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/schedules/{scheduleId}/status": {
+            "put": {
+                "tags": [
+                    "Cleaner Schedule Management"
+                ],
+                "summary": "Përditëso statusin e orarit të pastruesit",
+                "description": "Përditëson statusin e një orari specifik. Vetëm pastruesi i orarit ose admini mund ta bëjë këtë.",
+                "operationId": "updateCleanerScheduleStatus",
+                "parameters": [
+                    {
+                        "name": "scheduleId",
+                        "in": "path",
+                        "description": "ID e orarit për t'u përditësuar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Statusi i ri i orarit",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Planned",
+                                            "Completed",
+                                            "Canceled"
+                                        ],
+                                        "example": "Completed"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Statusi u përditësua me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Statusi u përditësua me sukses."
+                                        },
+                                        "schedule": {
+                                            "$ref": "#/components/schemas/CleanerScheduleModel"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Nuk keni leje për të ndryshuar statusin."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orari nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "No query results for model [App\\\\Models\\\\CleanerSchedule] 1"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Gabim validimi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cleaner/schedules/{cleanerSchedule}": {
+            "put": {
+                "tags": [
+                    "Cleaner Schedule Management"
+                ],
+                "summary": "Përditëso orarin e pastruesit (vetëm për admin)",
+                "description": "Përditëson detajet e një orari specifik të pastruesit. Vetëm adminët mund ta bëjnë këtë.",
+                "operationId": "updateCleanerSchedule",
+                "parameters": [
+                    {
+                        "name": "cleanerSchedule",
+                        "in": "path",
+                        "description": "ID e orarit për t'u përditësuar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Të dhënat e përditësuara të orarit",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "cleaner_id": {
+                                        "description": "ID e pastruesit (opsionale)",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "work_date": {
+                                        "description": "Data e punës (YYYY-MM-DD) (opsionale)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-07-02"
+                                    },
+                                    "shift_start": {
+                                        "description": "Ora e fillimit (HH:MM) (opsionale)",
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "10:00"
+                                    },
+                                    "shift_end": {
+                                        "description": "Ora e mbarimit (HH:MM) (opsionale)",
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "18:00"
+                                    },
+                                    "status": {
+                                        "description": "Statusi i orarit (opsionale)",
+                                        "type": "string",
+                                        "enum": [
+                                            "Planned",
+                                            "Completed",
+                                            "Canceled"
+                                        ],
+                                        "example": "Completed"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Orari u përditësua me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Orari u përditësua me sukses."
+                                        },
+                                        "schedule": {
+                                            "$ref": "#/components/schemas/CleanerScheduleModel"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo admin)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Nuk keni leje për të përditësuar orarin."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orari nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "No query results for model [App\\\\Models\\\\CleanerSchedule] 1"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Konflikt (orari ekziston tashmë)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Orari për këtë pastrues dhe datë ekziston tashmë."
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Gabim validimi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Merr të dhënat e panelit",
+                "description": "Kthen statistikat e përgjithshme të sistemit dhe aktivitetet e fundit. Vetëm adminët mund ta aksesojnë.",
+                "operationId": "getDashboardData",
+                "responses": {
+                    "200": {
+                        "description": "Të dhënat e panelit u morën me sukses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "stats": {
+                                            "properties": {
+                                                "total_users": {
+                                                    "description": "Numri total i përdoruesve",
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "admins": {
+                                                    "description": "Numri i adminëve",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "receptionists": {
+                                                    "description": "Numri i recepsionistëve",
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "cleaners": {
+                                                    "description": "Numri i pastruesve",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "active_users": {
+                                                    "description": "Numri i përdoruesve aktivë",
+                                                    "type": "integer",
+                                                    "example": 8
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "activities": {
+                                            "description": "Lista e aktiviteteve të fundit",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "user_name": {
+                                                        "type": "string",
+                                                        "example": "Filan Fisteku"
+                                                    },
+                                                    "user_role": {
+                                                        "type": "string",
+                                                        "example": "receptionist"
+                                                    },
+                                                    "action": {
+                                                        "type": "string",
+                                                        "example": "created reservation"
+                                                    },
+                                                    "target": {
+                                                        "type": "string",
+                                                        "example": "Reservation ID 123 - Jon Doe"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2024-05-28T10:00:00.000000Z"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Veprim i paautorizuar (jo admin)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "Nuk keni leje për të aksesuar panelin."
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/receptionists": {
             "post": {
                 "tags": [
@@ -2108,132 +3311,6 @@
                 ]
             }
         },
-        "/api/register": {
-            "post": {
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Regjistron një përdorues të ri",
-                "description": "Regjistron një përdorues të ri me rol 'user' si default. Nuk kërkon autentifikim.",
-                "operationId": "registerUser",
-                "requestBody": {
-                    "description": "Të dhënat e regjistrimit të përdoruesit",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "name",
-                                    "email",
-                                    "password",
-                                    "password_confirmation"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "example": "Jane Doe"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "jane.doe@example.com"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "password123"
-                                    },
-                                    "password_confirmation": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "password123"
-                                    },
-                                    "role": {
-                                        "description": "Roli i përdoruesit (opsional, default 'user')",
-                                        "type": "string",
-                                        "enum": [
-                                            "admin",
-                                            "receptionist",
-                                            "cleaner",
-                                            "user"
-                                        ],
-                                        "example": "user"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Përdoruesi u regjistrua me sukses",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "User registered successfully!"
-                                        },
-                                        "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Jane Doe"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "example": "jane.doe@example.com"
-                                                },
-                                                "role": {
-                                                    "type": "string",
-                                                    "example": "user"
-                                                },
-                                                "status": {
-                                                    "type": "string",
-                                                    "example": "active"
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Gabim validimi",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "errors": {
-                                            "type": "object",
-                                            "example": {
-                                                "email": [
-                                                    "The email has already been taken."
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/users": {
             "get": {
                 "tags": [
@@ -2276,55 +3353,41 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "properties": {
-                                            "id": {
-                                                "type": "integer",
-                                                "example": 1
-                                            },
-                                            "name": {
-                                                "type": "string",
-                                                "example": "Admin User"
-                                            },
-                                            "email": {
-                                                "type": "string",
-                                                "example": "admin@example.com"
-                                            },
-                                            "role": {
-                                                "type": "string",
-                                                "example": "admin"
-                                            },
-                                            "status": {
-                                                "type": "string",
-                                                "example": "active"
-                                            }
-                                        },
-                                        "type": "object"
+                                        "$ref": "#/components/schemas/UserResponse"
                                     }
                                 }
                             }
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Veprim i paautorizuar"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
                     },
                     "500": {
-                        "description": "Gabim serveri"
+                        "description": "Gabim serveri",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2410,33 +3473,7 @@
                                             "example": "User created successfully!"
                                         },
                                         "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "New Receptionist"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "example": "new.receptionist@example.com"
-                                                },
-                                                "role": {
-                                                    "type": "string",
-                                                    "example": "receptionist"
-                                                },
-                                                "status": {
-                                                    "type": "string",
-                                                    "example": "active"
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/UserResponse"
                                         }
                                     },
                                     "type": "object"
@@ -2445,20 +3482,21 @@
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Veprim i paautorizuar"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
@@ -2468,17 +3506,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "errors": {
-                                            "type": "object",
-                                            "example": {
-                                                "email": [
-                                                    "The email has already been taken."
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
                                 }
                             }
                         }
@@ -2524,33 +3552,7 @@
                                             "example": "User retrieved successfully!"
                                         },
                                         "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Admin User"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "example": "admin@example.com"
-                                                },
-                                                "role": {
-                                                    "type": "string",
-                                                    "example": "admin"
-                                                },
-                                                "status": {
-                                                    "type": "string",
-                                                    "example": "active"
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/UserResponse"
                                         }
                                     },
                                     "type": "object"
@@ -2559,26 +3561,37 @@
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Veprim i paautorizuar"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Përdoruesi nuk u gjet"
+                        "description": "Përdoruesi nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "No query results for model [App\\\\Models\\\\User] 1"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2671,33 +3684,7 @@
                                             "example": "User updated successfully!"
                                         },
                                         "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Updated Admin"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "example": "updated.admin@example.com"
-                                                },
-                                                "role": {
-                                                    "type": "string",
-                                                    "example": "admin"
-                                                },
-                                                "status": {
-                                                    "type": "string",
-                                                    "example": "inactive"
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/UserResponse"
                                         }
                                     },
                                     "type": "object"
@@ -2706,43 +3693,44 @@
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Veprim i paautorizuar"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Përdoruesi nuk u gjet"
+                        "description": "Përdoruesi nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "No query results for model [App\\\\Models\\\\User] 1"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Gabim validimi",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "errors": {
-                                            "type": "object",
-                                            "example": {
-                                                "email": [
-                                                    "The email has already been taken."
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
                                 }
                             }
                         }
@@ -2792,26 +3780,37 @@
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin ose tentativë për të fshirë veten)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Nuk mund të fshini veten!"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Përdoruesi nuk u gjet"
+                        "description": "Përdoruesi nuk u gjet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "message": "No query results for model [App\\\\Models\\\\User] 2"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2883,29 +3882,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer",
-                                                        "example": 1
-                                                    },
-                                                    "name": {
-                                                        "type": "string",
-                                                        "example": "User One"
-                                                    },
-                                                    "email": {
-                                                        "type": "string",
-                                                        "example": "user1@example.com"
-                                                    },
-                                                    "role": {
-                                                        "type": "string",
-                                                        "example": "user"
-                                                    },
-                                                    "status": {
-                                                        "type": "string",
-                                                        "example": "active"
-                                                    }
-                                                },
-                                                "type": "object"
+                                                "$ref": "#/components/schemas/UserResponse"
                                             }
                                         },
                                         "meta": {
@@ -2955,20 +3932,21 @@
                         }
                     },
                     "401": {
-                        "description": "Pa autentifikim"
+                        "description": "Pa autentifikim",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Veprim i paautorizuar (jo admin)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Veprim i paautorizuar"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
@@ -2984,6 +3962,42 @@
     },
     "components": {
         "schemas": {
+            "ValidationErrorResponse": {
+                "title": "Gabime Validimi",
+                "description": "Përgjigje standarde për gabimet e validimit",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "The given data was invalid."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ErrorResponse": {
+                "title": "Error Response",
+                "description": "Përgjigje standarde për gabimet (përdoret kur nuk ka gabime validimi)",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Një gabim ndodhi."
+                    },
+                    "error": {
+                        "type": "string",
+                        "example": "Detaje shtesë gabimi (opsionale).",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "ReceptionistSchedule": {
                 "title": "Receptionist Schedule",
                 "description": "Detajet e orarit të një recepsionisti",
@@ -3194,6 +4208,129 @@
                     }
                 },
                 "type": "object"
+            },
+            "UserResponse": {
+                "title": "User Response",
+                "description": "Modeli i përgjigjes së përdoruesit",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": "true",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.doe@example.com"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "admin",
+                            "receptionist",
+                            "cleaner",
+                            "user"
+                        ],
+                        "example": "user"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "inactive"
+                        ],
+                        "example": "active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": "true",
+                        "example": "2024-01-01T12:00:00.000000Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": "true",
+                        "example": "2024-01-01T12:00:00.000000Z"
+                    }
+                },
+                "type": "object"
+            },
+            "CleanerScheduleModel": {
+                "title": "Cleaner Schedule Model",
+                "description": "Modeli i orarit të pastruesit",
+                "properties": {
+                    "id": {
+                        "description": "ID e orarit",
+                        "type": "integer",
+                        "readOnly": "true",
+                        "example": 1
+                    },
+                    "cleaner_id": {
+                        "description": "ID e pastruesit",
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "work_date": {
+                        "description": "Data e punës (YYYY-MM-DD)",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-06-15"
+                    },
+                    "shift_start": {
+                        "description": "Ora e fillimit të turnit (HH:MM)",
+                        "type": "string",
+                        "format": "time",
+                        "example": "08:00"
+                    },
+                    "shift_end": {
+                        "description": "Ora e mbarimit të turnit (HH:MM)",
+                        "type": "string",
+                        "format": "time",
+                        "example": "16:00"
+                    },
+                    "status": {
+                        "description": "Statusi i orarit",
+                        "type": "string",
+                        "enum": [
+                            "Planned",
+                            "Completed",
+                            "Canceled"
+                        ],
+                        "example": "Planned"
+                    },
+                    "created_at": {
+                        "description": "Data e krijimit",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": "true"
+                    },
+                    "updated_at": {
+                        "description": "Data e fundit e përditësimit",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": "true"
+                    },
+                    "cleaner": {
+                        "description": "Detajet e pastruesit (nëse ngarkohen)",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 5
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Cleaner Name"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -3207,6 +4344,14 @@
         }
     },
     "tags": [
+        {
+            "name": "Cleaner Schedule Management",
+            "description": "Operacionet API për menaxhimin e orareve të pastruesve"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Operacionet API për marrjen e statistikave dhe aktiviteteve të panelit"
+        },
         {
             "name": "Receptionists",
             "description": "Operacionet API për menaxhimin e recepsionistëve"
@@ -3233,11 +4378,15 @@
         },
         {
             "name": "Authentication",
-            "description": "Operacionet API për regjistrimin e përdoruesve"
+            "description": "Authentication"
+        },
+        {
+            "name": "Cleaner Operations",
+            "description": "Cleaner Operations"
         },
         {
             "name": "User Management (Admin)",
-            "description": "Operacionet API për menaxhimin e përdoruesve nga adminët"
+            "description": "User Management (Admin)"
         }
     ]
 }

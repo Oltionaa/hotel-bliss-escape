@@ -7,6 +7,7 @@ const Pagesat = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Merr të dhënat nga location.state
   const { roomId, roomTitle, checkIn, checkOut } = location.state || {};
 
   const [formData, setFormData] = useState({
@@ -20,34 +21,53 @@ const Pagesat = () => {
 
   const [error, setError] = useState("");
 
+  // Funksion për të trajtuar ndryshimet në input
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Validim për numrin e kartës (13-19 shifra, vetëm numra)
   const validateCardNumber = (number) => {
-    
     return /^\d{13,19}$/.test(number);
   };
 
+  // Validim për CVV (3-4 shifra)
   const validateCVV = (cvv) => {
     return /^\d{3,4}$/.test(cvv);
   };
 
+  // Funksion për të formatuar datat në YYYY-MM-DD
+  const formatDate = (date) => {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        throw new Error("Data e pavlefshme");
+      }
+      return d.toISOString().split("T")[0]; // Kthen YYYY-MM-DD
+    } catch {
+      setError("Formati i datës është i pavlefshëm.");
+      return null;
+    }
+  };
+
+  // Funksion për të kryer checkout-in
   const handleCheckout = async () => {
     setError("");
 
     const { customerName, cardholder, bankName, cardNumber, cardType, cvv } = formData;
 
+    // Validimi në frontend
     if (!customerName || !cardholder || !bankName || !cardNumber || !cardType || !cvv) {
       setError("Ju lutem plotësoni të gjitha fushat.");
       return;
     }
 
     if (!validateCardNumber(cardNumber)) {
-      setError("Numri i kartës nuk është valid. Duhet të përmbajë vetëm shifra (13-19).");
+      setError("Numri i kartës nuk është valid. Duhet të përmbajë 13-19 shifra.");
       return;
     }
+
     if (!validateCVV(cvv)) {
       setError("CVV nuk është valid. Duhet të përmbajë 3 ose 4 shifra.");
       return;
@@ -59,22 +79,46 @@ const Pagesat = () => {
       navigate("/login");
       return;
     }
-    
+
+    // Formatimi i datave
+    const checkInFormatted = formatDate(checkIn);
+    const checkOutFormatted = formatDate(checkOut);
+
+    if (!checkInFormatted || !checkOutFormatted) {
+      setError("Datat e check-in ose check-out janë të pavlefshme.");
+      return;
+    }
+
+    // Validim shtesë për datat
+    const today = new Date().toISOString().split("T")[0];
+    if (checkInFormatted < today) {
+      setError("Data e check-in nuk mund të jetë në të kaluarën.");
+      return;
+    }
+    if (checkOutFormatted <= checkInFormatted) {
+      setError("Data e check-out duhet të jetë pas check-in.");
+      return;
+    }
+
+    // Përgatitja e të dhënave për dërgim
     const reservationData = {
-      customer_name: customerName,
-      check_in: checkIn,
-      check_out: checkOut,
-      room_id: roomId,
-      user_id: localStorage.getItem("user_id"),
+      customer_name: customerName.trim(),
+      check_in: checkInFormatted,
+      check_out: checkOutFormatted,
+      room_id: parseInt(roomId), // Sigurohu që është numër
+      user_id: parseInt(localStorage.getItem("user_id")) || null, // Null nëse mungon
       status: "confirmed",
       payment: {
-        cardholder,
-        bank_name: bankName,
-        card_number: cardNumber,
-        card_type: cardType,
-        cvv,
+        cardholder: cardholder.trim(),
+        bank_name: bankName.trim(),
+        card_number: cardNumber.trim(),
+        card_type: cardType.trim().toLowerCase(), // Normalizo në lowercase
+        cvv: cvv.trim(),
       },
     };
+
+    // Log për debugging
+    console.log("Të dhënat e dërguara:", JSON.stringify(reservationData, null, 2));
 
     try {
       const response = await axios.post("http://localhost:8000/api/checkout", reservationData, {
@@ -86,26 +130,28 @@ const Pagesat = () => {
 
       const { reservation, payment } = response.data;
 
+      // Navigo te faqja e konfirmimit
       navigate("/confirmation", {
         state: {
           reservationDetails: reservation,
           paymentDetails: payment,
           roomTitle,
-          checkIn,
-          checkOut,
+          checkIn: checkInFormatted,
+          checkOut: checkOutFormatted,
         },
       });
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || "Gabim i panjohur";
-       setError(
-  errorMessage === "Dhoma është e rezervuar tashmë"
-    ? "Më vjen keq, dhoma është e zënë për datat që zgjodhët. Ju lutem zgjidhni një datë tjetër ose një dhomë tjetër."
-    : "Gabim gjatë procesimit të rezervimit: " + errorMessage
-);
+      console.error("Përgjigjja e gabimit nga serveri:", err.response?.data);
+      const errorMessage = err.response?.data?.error || err.response?.data?.messages || err.message || "Gabim i panjohur";
+      setError(
+        errorMessage.includes("Dhoma është e rezervuar")
+          ? "Më vjen keq, dhoma është e zënë për datat që zgjodhët. Ju lutem zgjidhni një datë tjetër ose një dhomë tjetër."
+          : `Gabim gjatë procesimit të rezervimit: ${JSON.stringify(errorMessage)}`
+      );
     }
-    
   };
 
+  // Kontrollo nëse të dhënat fillestare mungojnë
   if (!roomId || !roomTitle || !checkIn || !checkOut) {
     return (
       <div className="container mt-5 text-center text-danger">
@@ -172,14 +218,14 @@ const Pagesat = () => {
             Numri i Kartës
           </label>
           <input
-            type="number"
+            type="text" // Ndërruar në text për të kontrolluar input-in më mirë
             className="form-control"
             id="cardNumber"
             name="cardNumber"
             value={formData.cardNumber}
             onChange={handleChange}
-            placeholder="Shkruani numrin e kartës"
-            min="0"
+            placeholder="Shkruani numrin e kartës (16 shifra)"
+            maxLength="19"
           />
         </div>
 
@@ -187,15 +233,17 @@ const Pagesat = () => {
           <label htmlFor="cardType" className="form-label">
             Tipi i Kartës
           </label>
-          <input
-            type="text"
+          <select
             className="form-control"
             id="cardType"
             name="cardType"
             value={formData.cardType}
             onChange={handleChange}
-            placeholder="p.sh., Visa, MasterCard"
-          />
+          >
+            <option value="">Zgjidh tipin e kartës</option>
+            <option value="visa">Visa</option>
+            <option value="mastercard">MasterCard</option>
+          </select>
         </div>
 
         <div className="mb-3">
@@ -203,14 +251,14 @@ const Pagesat = () => {
             CVV
           </label>
           <input
-            type="number"
+            type="text" // Ndërruar në text për kontroll më të mirë
             className="form-control"
             id="cvv"
             name="cvv"
             value={formData.cvv}
             onChange={handleChange}
-            placeholder="Shkruani CVV"
-            min="0"
+            placeholder="Shkruani CVV (3 shifra)"
+            maxLength="3"
           />
         </div>
 
