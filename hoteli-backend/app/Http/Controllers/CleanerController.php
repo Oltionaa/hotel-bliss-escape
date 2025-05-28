@@ -106,13 +106,8 @@ class CleanerController extends Controller
      * )
      * )
      */
-    public function markRoomAsClean($roomId)
+   public function markRoomAsClean($roomId)
     {
-        // Këtu do të shtonim një ensureIsCleaner() nëse do ta kishim.
-        // if ($unauthorized = $this->ensureIsCleaner()) {
-        //     return $unauthorized;
-        // }
-
         $room = Room::find($roomId);
 
         if (!$room) {
@@ -120,21 +115,30 @@ class CleanerController extends Controller
             return response()->json(['message' => 'Room not found'], 404);
         }
 
-        // Kjo logjikë do të duhet të jetë më e sofistikuar në prodhim.
-        // P.sh., nuk mund të shënosh si 'clean' një dhomë që nuk është 'dirty' ose 'maintenance'.
-        // Për momentin, po e lëmë të thjeshtë.
         if ($room->status === 'clean') {
-             return response()->json(['message' => 'Room is already clean'], 200);
+            return response()->json(['message' => 'Room is already clean'], 200);
         }
 
-        $room->status = 'clean';
-        $room->cleaner_id = Auth::id(); // Krijoni një kolonë cleaner_id në tabelën e dhomave nëse dëshironi të ruani ID-në e pastruesit.
-                                        // Përndryshe, ruajeni në një tabelë logi ose historiku.
-        $room->save();
+        try {
+    \DB::table('rooms')
+        ->where('id', $roomId)
+        ->update([
+            'status' => 'clean',
+            // 'cleaner_id' => Auth::id(), // Ensure this column exists if uncommented
+            'updated_at' => now(), // Explicitly set updated_at
+        ]);
 
-        Log::info('Room marked as clean', ['room_id' => $roomId, 'cleaner_id' => Auth::id()]);
+    Log::info('Room marked as clean via DB::table bypass', ['room_id' => $roomId, 'cleaner_id' => Auth::id()]);
+    return response()->json(['message' => 'Room marked as clean'], 200);
 
-        return response()->json(['message' => 'Room marked as clean'], 200);
+} catch (\Exception $e) {
+    Log::error('Error marking room clean with DB::table bypass', [
+        'room_id' => $roomId,
+        'error_message' => $e->getMessage(),
+        'exception' => $e
+    ]);
+    return response()->json(['message' => 'Error marking room clean', 'error' => $e->getMessage()], 500);
+}
     }
 
     /**
