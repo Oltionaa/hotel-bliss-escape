@@ -9,24 +9,24 @@ const Users = () => {
     const fetchUsers = async () => {
         try {
             const response = await axios.get('http://127.0.0.1:8000/api/users');
-            setUsers(response.data); // Ruaj përdoruesit në state
-            setLoading(false); // Ndalo ngarkimin
+            setUsers(response.data);
+            setLoading(false); 
         } catch (error) {
             setError('Ka ndodhur një gabim gjatë marrëdhënies së përdoruesve');
-            setLoading(false); // Ndalo ngarkimin edhe nëse ndodhi gabimi
+            setLoading(false); 
         }
     };
 
     useEffect(() => {
-        fetchUsers(); // Thirr funksionin kur komponenti ngarkohet
+        fetchUsers(); 
     }, []);
 
     if (loading) {
-        return <div>Po ngarkohet...</div>; // Mund të vendosësh një tekst për ngarkimin
+        return <div>Po ngarkohet...</div>; 
     }
 
     if (error) {
-        return <div>{error}</div>; // Shfaq gabimin nëse ndodhi
+        return <div>{error}</div>; 
     }
 
     return (

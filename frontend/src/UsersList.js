@@ -17,7 +17,6 @@ const UsersList = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-      console.log('fetchUsers: Token:', token, 'UserType:', userType);
 
       if (!token || userType !== 'admin') {
         setError('Ju lutemi hyni si admin për të parë përdoruesit.');
@@ -31,24 +30,19 @@ const UsersList = () => {
       const params = { page };
       if (search) params.search = search;
       if (role) params.role = role;
-      console.log('fetchUsers: Params:', params);
 
       await axios.get('http://localhost:8000/sanctum/csrf-cookie');
-      const response = await axios.get('http://localhost:8000/api/admin/users-paginated', { // KJO ËSHTË LINJA E NDRYSHUAR!
+      const response = await axios.get('http://localhost:8000/api/admin/users-paginated', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         params,
       });
 
-      console.log('fetchUsers: Response:', response.data);
-      setUsers(response.data.data || []); // Laravel paginate kthen direkt "data" jo "data.data"
-      setMeta(response.data || {}); // Dhe meta është direkt në response.data
+      setUsers(response.data.data || []);
+      setMeta(response.data || {});
       setError(null);
     } catch (err) {
-      console.error('fetchUsers: Error:', err.response?.data || err);
-      console.error('fetchUsers: Status:', err.response?.status);
-      console.error('fetchUsers: Data:', err.response?.data);
       if (err.response?.status === 401) {
         setError('Sesioni juaj ka skaduar. Ju lutemi hyni përsëri.');
         localStorage.removeItem('token');
@@ -78,22 +72,17 @@ const UsersList = () => {
 
     try {
       const token = localStorage.getItem('token');
-      console.log('handleDelete: Sending DELETE with token:', token, 'for user ID:', id);
 
-      await axios.get('http://localhost:8000/sanctum/csrf-cookie');
-      const response = await axios.delete(`http://localhost:8000/api/admin/users/${id}`, {
+      await axios.get('http://localhost:8000/sanctum/csrf-cookie'); 
+      await axios.delete(`http://localhost:8000/api/admin/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log('handleDelete: Response:', response.data);
       setUsers(users.filter((user) => user.id !== id));
       setError(null);
     } catch (err) {
-      console.error('handleDelete: Error:', err.response?.data || err);
-      console.error('handleDelete: Status:', err.response?.status);
-      console.error('handleDelete: Data:', err.response?.data);
       setError(
         err.response?.data?.error ||
         err.response?.data?.message ||

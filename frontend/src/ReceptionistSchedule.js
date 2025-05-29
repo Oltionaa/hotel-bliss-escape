@@ -7,7 +7,6 @@ function ReceptionistSchedule({ authToken }) {
   const [loadingAll, setLoadingAll] = useState(true);
   const [errorMy, setErrorMy] = useState(null);
   const [errorAll, setErrorAll] = useState(null);
-  const [userId, setUserId] = useState(null);
 
   const fetchSchedules = useCallback(async () => {
     setLoadingMy(true);
@@ -22,8 +21,6 @@ function ReceptionistSchedule({ authToken }) {
       setLoadingAll(false);
       return;
     }
-
-    // Fetch My Schedules
     try {
       const myRes = await fetch('http://localhost:8000/api/receptionist/schedules/my', {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -33,16 +30,12 @@ function ReceptionistSchedule({ authToken }) {
         throw new Error(errorData.message || `Gabim gjatë ngarkimit të orareve tuaja: Status ${myRes.status}`);
       }
       const myData = await myRes.json();
-      console.log("Orarët e mi të ngarkuara:", myData);
       setMySchedules(myData);
     } catch (err) {
-      console.error("Gabim gjatë ngarkimit të orareve të mia:", err.message);
       setErrorMy(err.message);
     } finally {
       setLoadingMy(false);
     }
-
-    // Fetch All Schedules
     try {
       const allRes = await fetch('http://localhost:8000/api/receptionist/schedules/all', {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -52,10 +45,8 @@ function ReceptionistSchedule({ authToken }) {
         throw new Error(errorData.message || `Gabim gjatë ngarkimit të të gjitha orareve: Status ${allRes.status}`);
       }
       const allData = await allRes.json();
-      console.log("Të gjitha oraret e ngarkuara:", allData);
       setAllSchedules(allData);
     } catch (err) {
-      console.error("Gabim gjatë ngarkimit të të gjitha orareve:", err.message);
       setErrorAll(err.message);
     } finally {
       setLoadingAll(false);
@@ -63,10 +54,6 @@ function ReceptionistSchedule({ authToken }) {
   }, [authToken, setMySchedules, setAllSchedules, setErrorMy, setErrorAll, setLoadingMy, setLoadingAll]);
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      setUserId(parseInt(storedUserId, 10));
-    }
     fetchSchedules();
   }, [fetchSchedules]);
 
@@ -97,8 +84,6 @@ function ReceptionistSchedule({ authToken }) {
         }
         throw new Error(errorData.message || 'Gabim gjatë përditësimit të statusit.');
       }
-
-      // Përditëso gjendjet e orareve (mySchedules dhe allSchedules)
       setMySchedules(prevSchedules =>
         prevSchedules.map(s => (s.id === scheduleId ? { ...s, status: newStatus } : s))
       );
@@ -107,7 +92,6 @@ function ReceptionistSchedule({ authToken }) {
       );
 
     } catch (err) {
-      console.error("Gabim në përditësimin e statusit:", err.message);
       setErrorMy(err.message);
       setErrorAll(err.message);
     }

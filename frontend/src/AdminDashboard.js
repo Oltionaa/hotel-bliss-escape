@@ -5,7 +5,6 @@ import { Table, Alert } from 'react-bootstrap';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 
-// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const AdminDashboard = () => {
@@ -16,10 +15,8 @@ const AdminDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    console.log('AdminDashboard: token:', token, 'userType:', userType);
 
     if (!token || userType !== 'admin') {
-      console.log('Redirecting to login: No token or wrong userType');
       localStorage.removeItem('token');
       localStorage.removeItem('user_id');
       localStorage.removeItem('userType');
@@ -31,11 +28,9 @@ const AdminDashboard = () => {
       const response = await axios.get('http://localhost:8000/api/admin/dashboard', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Dashboard Data:', response.data);
       setDashboardData(response.data);
       setError(null);
     } catch (err) {
-      console.error('Gabim gjatë marrjes së të dhënave të panelit:', err.response?.data || err.message);
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError('Sesioni juaj ka skaduar. Ju lutemi hyni përsëri.');
         localStorage.removeItem('token');
@@ -91,19 +86,6 @@ const AdminDashboard = () => {
       title: {
         display: true,
         text: 'Shpërndarja e Përdoruesve sipas Roleve',
-      },
-      annotation: {
-        annotations: {
-          activeUsers: {
-            type: 'label',
-            content: dashboardData ? `Përdorues Aktivë: ${dashboardData.stats.active_users}` : 'Përdorues Aktivë: 0',
-            position: 'top',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: '#FFFFFF',
-            xAdjust: 0,
-            yAdjust: -20,
-          },
-        },
       },
     },
   };

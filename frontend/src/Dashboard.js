@@ -54,7 +54,7 @@ const Dashboard = () => {
         console.log("Rooms fetched:", roomsResponse.data);
         setRooms(roomsResponse.data);
 
-        // Simulim për pagesat
+        // Simulation for payments
         const fetchedPayments = [
           { id: 1, amount: 5000, date: "2025-04-18" },
           { id: 2, amount: 3000, date: "2025-04-19" },
@@ -62,7 +62,7 @@ const Dashboard = () => {
         setPayments(fetchedPayments);
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError(error.response?.data?.message || "Gabim gjatë ngarkimit të të dhënave.");
+        setError(error.response?.data?.message || "Error loading data.");
         if (error.response?.status === 401) {
           console.log("Unauthorized, clearing token");
           localStorage.removeItem("token");
@@ -105,10 +105,10 @@ const Dashboard = () => {
         )
       );
       setShowEditModal(false);
-      alert("Rezervimi u përditësua me sukses!");
+      alert("Reservation updated successfully!");
     } catch (error) {
       console.error("Error updating reservation:", error);
-      setError(error.response?.data?.message || "Gabim gjatë përditësimit të rezervimit.");
+      setError(error.response?.data?.message || "Error updating reservation.");
     }
   };
 
@@ -134,15 +134,15 @@ const Dashboard = () => {
         card_number: "",
         cvv: "",
       });
-      alert("Rezervimi u krijua me sukses!");
+      alert("Reservation created successfully!");
     } catch (error) {
       console.error("Error creating reservation:", error);
-      setError(error.response?.data?.message || "Gabim gjatë krijimit të rezervimit.");
+      setError(error.response?.data?.message || "Error creating reservation.");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Jeni i sigurt që doni të fshini këtë rezervim?")) {
+    if (window.confirm("Are you sure you want to delete this reservation?")) {
       try {
         const token = localStorage.getItem("token");
         console.log("Deleting reservation ID:", id);
@@ -151,10 +151,10 @@ const Dashboard = () => {
         });
         console.log("Delete response:", response.data);
         setReservations(reservations.filter((rez) => rez.id !== id));
-        alert("Rezervimi u fshi me sukses!");
+        alert("Reservation deleted successfully!");
       } catch (error) {
         console.error("Error deleting reservation:", error);
-        setError(error.response?.data?.message || "Gabim gjatë fshirjes së rezervimit.");
+        setError(error.response?.data?.message || "Error deleting reservation.");
       }
     }
   };
@@ -195,11 +195,11 @@ const Dashboard = () => {
           </Button>
           <Nav variant="pills" className="flex-column">
             <Nav.Item>
-              <Nav.Link eventKey="reservations">Rezervimet</Nav.Link>
+              <Nav.Link eventKey="reservations">Reservations</Nav.Link>
             </Nav.Item>
             <Nav.Item>
               <Nav.Link eventKey="payments" onClick={handleGoToPayments}>
-                Pagesat
+                Payments
               </Nav.Link>
             </Nav.Item>
           </Nav>
@@ -208,7 +208,7 @@ const Dashboard = () => {
           <Tab.Container defaultActiveKey={initialTab}>
             <Tab.Content>
               <Tab.Pane eventKey="reservations">
-                <h5>Rezervimet</h5>
+                <h5>Reservations</h5>
                 <Button
                   variant="primary"
                   className="mb-3"
@@ -217,7 +217,7 @@ const Dashboard = () => {
                     setShowCreateModal(true);
                   }}
                 >
-                  Shto Rezervim
+                  Add Reservation
                 </Button>
                 {loading ? (
                   <Spinner animation="border" />
@@ -225,35 +225,35 @@ const Dashboard = () => {
                   reservations.map((rez) => (
                     <Card className="mb-3" key={rez.id}>
                       <Card.Body>
-                        <Card.Title>{rez.room?.title || "Dhoma e panjohur"}</Card.Title>
+                        <Card.Title>{rez.room?.title || "Unknown Room"}</Card.Title>
                         <Card.Text>
-                          <strong>Emri i Klientit:</strong> {rez.customer_name} <br />
+                          <strong>Customer Name:</strong> {rez.customer_name} <br />
                           <strong>Check-In:</strong> {rez.check_in} <br />
                           <strong>Check-Out:</strong> {rez.check_out} <br />
-                          <strong>Statusi:</strong> {rez.status}
+                          <strong>Status:</strong> {rez.status}
                         </Card.Text>
                         <Button
                           variant="warning"
                           className="me-2"
                           onClick={() => handleEdit(rez)}
                         >
-                          Edito
+                          Edit
                         </Button>
                         <Button
                           variant="danger"
                           onClick={() => handleDelete(rez.id)}
                         >
-                          Fshi
+                          Delete
                         </Button>
                       </Card.Body>
                     </Card>
                   ))
                 ) : (
-                  <p>Nuk ka rezervime.</p>
+                  <p>No reservations.</p>
                 )}
               </Tab.Pane>
               <Tab.Pane eventKey="payments">
-                <h5>Pagesat</h5>
+                <h5>Payments</h5>
                 <Pagesat payments={payments} onUpdatePayments={handleUpdatePayments} />
               </Tab.Pane>
             </Tab.Content>
@@ -263,7 +263,7 @@ const Dashboard = () => {
 
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Edito Rezervimin</Modal.Title>
+          <Modal.Title>Edit Reservation</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleUpdate}>
@@ -290,7 +290,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Button variant="primary" type="submit">
-              Përditëso
+              Update
             </Button>
           </Form>
         </Modal.Body>
@@ -298,12 +298,12 @@ const Dashboard = () => {
 
       <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Shto Rezervim</Modal.Title>
+          <Modal.Title>Add Reservation</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleCreate}>
             <Form.Group className="mb-3">
-              <Form.Label>Dhoma</Form.Label>
+              <Form.Label>Room</Form.Label>
               <Form.Select
                 value={createFormData.room_title}
                 onChange={(e) => {
@@ -317,7 +317,7 @@ const Dashboard = () => {
                 }}
                 required
               >
-                <option value="">Zgjidh një dhomë</option>
+                <option value="">Select a room</option>
                 {rooms.length > 0 ? (
                   rooms.map((room) => (
                     <option key={room.id} value={room.title}>
@@ -330,7 +330,7 @@ const Dashboard = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Çmimi</Form.Label>
+              <Form.Label>Price</Form.Label>
               <Form.Control
                 type="number"
                 value={createFormData.room_price}
@@ -362,7 +362,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Emri i Klientit</Form.Label>
+              <Form.Label>Customer Name</Form.Label>
               <Form.Control
                 type="text"
                 value={createFormData.customer_name}
@@ -373,7 +373,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Emri i Mbajtësit të Kartës</Form.Label>
+              <Form.Label>Cardholder Name</Form.Label>
               <Form.Control
                 type="text"
                 value={createFormData.cardholder}
@@ -384,7 +384,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Emri i Bankës</Form.Label>
+              <Form.Label>Bank Name</Form.Label>
               <Form.Control
                 type="text"
                 value={createFormData.bank_name}
@@ -395,7 +395,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Numri i Kartës</Form.Label>
+              <Form.Label>Card Number</Form.Label>
               <Form.Control
                 type="text"
                 value={createFormData.card_number}
@@ -419,7 +419,7 @@ const Dashboard = () => {
               />
             </Form.Group>
             <Button variant="primary" type="submit">
-              Rezervo
+              Reserve
             </Button>
           </Form>
         </Modal.Body>

@@ -18,9 +18,9 @@ const UserDashboard = () => {
     const fetchReservations = async () => {
       try {
         const token = localStorage.getItem("token");
-        console.log("Token për fetch:", token);
+        console.log("Token for fetch:", token);
         if (!token) {
-          setError("Ju lutem identifikohuni për të parë rezervimet.");
+          setError("Please log in to view your reservations.");
           navigate("/login");
           return;
         }
@@ -34,7 +34,7 @@ const UserDashboard = () => {
         setReservations(response.data.reservations || []);
       } catch (err) {
         console.error("Fetch error:", err.response?.data || err.message);
-        setError("Gabim gjatë marrjes së rezervimeve: " + (err.response?.data?.message || err.message));
+        setError("Error fetching reservations: " + (err.response?.data?.message || err.message));
         if (err.response?.status === 401) {
           localStorage.removeItem("token");
           navigate("/login");
@@ -65,9 +65,9 @@ const UserDashboard = () => {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem("token");
-      console.log("Kërkesa PUT, reservationId:", reservationId, "Token:", token);
+      console.log("PUT request, reservationId:", reservationId, "Token:", token);
       if (!token) {
-        throw new Error("Token mungon. Ridrejto te login.");
+        throw new Error("Missing token. Redirecting to login.");
       }
 
       const response = await axios.put(
@@ -93,20 +93,20 @@ const UserDashboard = () => {
       setEditReservationId(null);
       setError("");
     } catch (error) {
-      console.error("Gabim gjatë përditësimit:", error.response?.data || error.message);
+      console.error("Error during update:", error.response?.data || error.message);
       let errorMessage = error.response?.data?.message || error.message;
       if (error.response?.status === 401) {
-        errorMessage = "Përdoruesi nuk është autentikuar. Ju lutem identifikohuni përsëri.";
+        errorMessage = "User is not authenticated. Please log in again.";
         localStorage.removeItem("token");
         navigate("/login");
       } else if (error.response?.status === 404) {
-        errorMessage = "Rezervimi nuk u gjet.";
+        errorMessage = "Reservation not found.";
       } else if (error.response?.status === 403) {
-        errorMessage = "Nuk keni autorizim për të përditësuar këtë rezervim.";
+        errorMessage = "You are not authorized to update this reservation.";
       } else if (error.response?.status === 422) {
-        errorMessage = "Të dhënat e dhëna janë të pavlefshme. Kontrollo datat.";
+        errorMessage = "Invalid data provided. Check dates.";
       } else if (error.response?.status === 500) {
-        errorMessage = "Gabim në server. Ju lutem provoni përsëri më vonë.";
+        errorMessage = "Server error. Please try again later.";
       }
       setError(errorMessage);
     } finally {
@@ -115,12 +115,12 @@ const UserDashboard = () => {
   };
 
   const cancelReservation = async (reservationId) => {
-    if (!window.confirm("Jeni të sigurt që doni të anuloni këtë rezervim?")) return;
+    if (!window.confirm("Are you sure you want to cancel this reservation?")) return;
     try {
       const token = localStorage.getItem("token");
-      console.log("Kërkesa DELETE, reservationId:", reservationId, "Token:", token);
+      console.log("DELETE request, reservationId:", reservationId, "Token:", token);
       if (!token) {
-        throw new Error("Token mungon. Ridrejto te login.");
+        throw new Error("Missing token. Redirecting to login.");
       }
 
       await axios.delete(`http://localhost:8000/api/reservations/${reservationId}`, {
@@ -135,20 +135,20 @@ const UserDashboard = () => {
       console.error("Delete error:", err.response?.data || err.message);
       let errorMessage = err.response?.data?.message || err.message;
       if (err.response?.status === 401) {
-        errorMessage = "Përdoruesi nuk është autentikuar. Ju lutem identifikohuni përsëri.";
+        errorMessage = "User is not authenticated. Please log in again.";
         localStorage.removeItem("token");
         navigate("/login");
       }
-      setError("Gabim gjatë anulimit të rezervimit: " + errorMessage);
+      setError("Error canceling reservation: " + errorMessage);
     }
   };
 
   return (
     <div className="container mt-5">
-      <h2 className="mb-4">Rezervimet e Mia</h2>
+      <h2 className="mb-4">My Reservations</h2>
       {error && <div className="alert alert-danger mb-4">{error}</div>}
       {reservations.length === 0 ? (
-        <p className="text-muted">Nuk keni asnjë rezervim.</p>
+        <p className="text-muted">You don't have any reservations.</p>
       ) : (
         <div className="row">
           {reservations.map((reservation) => (
@@ -156,16 +156,16 @@ const UserDashboard = () => {
               <div className="card shadow-sm">
                 <div className="card-body">
                   <h5 className="card-title">
-                    Dhoma: {reservation.room?.title || "N/A"}
+                    Room: {reservation.room?.title || "N/A"}
                   </h5>
                   <p className="card-text">
-                    <strong>Emri:</strong> {reservation.customer_name}
+                    <strong>Name:</strong> {reservation.customer_name}
                   </p>
                   {editReservationId === reservation.id ? (
                     <div>
                       <div className="mb-3">
                         <label htmlFor="check_in" className="form-label">
-                          Data e Hyrjes
+                          Check-In Date
                         </label>
                         <input
                           type="date"
@@ -177,7 +177,7 @@ const UserDashboard = () => {
                       </div>
                       <div className="mb-3">
                         <label htmlFor="check_out" className="form-label">
-                          Data e Daljes
+                          Check-Out Date
                         </label>
                         <input
                           type="date"
@@ -192,59 +192,59 @@ const UserDashboard = () => {
                         onClick={() => saveEdit(reservation.id)}
                         disabled={isUpdating}
                       >
-                        Ruaj
+                        Save
                       </button>
                       <button
                         className="btn btn-secondary"
                         onClick={() => setEditReservationId(null)}
                         disabled={isUpdating}
                       >
-                        Anulo Editimin
+                        Cancel Edit
                       </button>
                     </div>
                   ) : (
                     <div>
                       <p className="card-text">
-                        <strong>Data e Hyrjes:</strong> {reservation.check_in}
+                        <strong>Check-In Date:</strong> {reservation.check_in}
                       </p>
                       <p className="card-text">
-                        <strong>Data e Daljes:</strong> {reservation.check_out}
+                        <strong>Check-Out Date:</strong> {reservation.check_out}
                       </p>
                       <p className="card-text">
-                        <strong>Statusi:</strong> {reservation.status}
+                        <strong>Status:</strong> {reservation.status}
                       </p>
-                      <h6>Detajet e Pagesës</h6>
+                      <h6>Payment Details</h6>
                       {reservation.payment ? (
                         <div>
                           <p className="card-text">
-                            <strong>Emri i Mbajtësit:</strong>{" "}
+                            <strong>Cardholder Name:</strong>{" "}
                             {reservation.payment.cardholder}
                           </p>
                           <p className="card-text">
-                            <strong>Banka:</strong> {reservation.payment.bank_name}
+                            <strong>Bank:</strong> {reservation.payment.bank_name}
                           </p>
                           <p className="card-text">
-                            <strong>Numri i Kartës:</strong>{" "}
+                            <strong>Card Number:</strong>{" "}
                             {reservation.payment.card_number.slice(-4).padStart(16, "**** **** **** ")}
                           </p>
                           <p className="card-text">
-                            <strong>Tipi i Kartës:</strong> {reservation.payment.card_type}
+                            <strong>Card Type:</strong> {reservation.payment.card_type}
                           </p>
                         </div>
                       ) : (
-                        <p className="card-text">Nuk ka detaje pagese.</p>
+                        <p className="card-text">No payment details.</p>
                       )}
                       <button
                         className="btn btn-primary me-2"
                         onClick={() => startEditing(reservation)}
                       >
-                        Edito Datat
+                        Edit Dates
                       </button>
                       <button
                         className="btn btn-danger"
                         onClick={() => cancelReservation(reservation.id)}
                       >
-                        Anulo Rezervimin
+                        Cancel Reservation
                       </button>
                     </div>
                   )}

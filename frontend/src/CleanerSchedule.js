@@ -7,7 +7,6 @@ function CleanerSchedule({ authToken }) {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
-  // Marrja e orareve të pastruesit
   const fetchMySchedules = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -26,53 +25,41 @@ function CleanerSchedule({ authToken }) {
         "Gabim gjatë ngarkimit të orareve tuaja: " +
         (err.response?.data?.message || err.message || "Një gabim i panjohur ndodhi.")
       );
-      console.error("Gabim gjatë ngarkimit të orareve të mia (pastrues):", err);
     } finally {
       setLoading(false);
     }
   }, [authToken]);
 
-  // Ekzekutimi i fetchMySchedules kur komponenti montohet ose kur ndryshon fetchMySchedules
   useEffect(() => {
     fetchMySchedules();
   }, [fetchMySchedules]);
 
-  // Formaton datën në formatin Shqiptar (DD.MM.YYYY)
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      // Përdor 'sq-AL' për formatin shqiptar
       return date.toLocaleDateString('sq-AL', { year: 'numeric', month: '2-digit', day: '2-digit' });
     } catch (e) {
-      console.error("Gabim në formatimin e datës:", dateString, e);
       return 'N/A';
     }
   };
 
-  // Formaton orën në formatin HH:MM
   const formatTime = (timeString) => {
     if (!timeString) return 'N/A';
     try {
-      // Shiko formatin e ardhur. Nqs është datë e plotë, nxirre orën.
-      // P.sh. "2025-06-01T08:00:00.000000Z" -> "08:00"
-      // Ose nqs është thjesht orë "08:00:00" -> "08:00"
       if (timeString.includes('T') && timeString.includes(':')) {
-        const timePart = timeString.split('T')[1]; // Merr pjesën pas 'T'
-        return timePart.substring(0, 5); // Merr "HH:MM"
+        const timePart = timeString.split('T')[1]; 
+        return timePart.substring(0, 5); 
       } else if (timeString.includes(':')) {
-        return timeString.substring(0, 5); // Nqs është vetëm "HH:MM:SS" ose "HH:MM"
+        return timeString.substring(0, 5); 
       }
-      return 'N/A'; // Nqs formati është i panjohur
+      return 'N/A'; 
     } catch (e) {
-      console.error("Gabim në formatimin e orës:", timeString, e);
       return 'N/A';
     }
   };
 
-  // Trajton ndryshimin e statusit të orarit (Completed/Canceled)
   const handleToggleStatus = async (scheduleId, currentStatus) => {
-    // Ndrysho statusin: Completed -> Canceled, ose çdo tjetër -> Completed
     let newStatus = currentStatus === 'Completed' ? 'Canceled' : 'Completed';
     setError(null);
     setMessage(null);
@@ -87,8 +74,6 @@ function CleanerSchedule({ authToken }) {
           },
         }
       );
-
-      // Përditëso gjendjen lokale të orareve
       setMySchedules((prevSchedules) =>
         prevSchedules.map((s) => (s.id === scheduleId ? { ...s, status: newStatus } : s))
       );
@@ -98,7 +83,6 @@ function CleanerSchedule({ authToken }) {
         "Gabim në përditësimin e statusit: " +
         (err.response?.data?.message || err.message || "Një gabim i panjohur ndodhi.")
       );
-      console.error("Gabim në përditësimin e statusit (pastrues):", err);
     }
   };
 
@@ -107,8 +91,6 @@ function CleanerSchedule({ authToken }) {
   return (
     <div className="container mt-4">
       <h4 className="mb-3">Oraret e Mia të Planifikuara</h4>
-
-      {/* Shfaq mesazhet e gabimit ose suksesit */}
       {error && <div className="alert alert-danger mb-3">{error}</div>}
       {message && <div className="alert alert-success mb-3">{message}</div>}
 
@@ -150,7 +132,6 @@ function CleanerSchedule({ authToken }) {
                     </span>
                   </td>
                   <td>
-                    {/* Butoni për ndryshimin e statusit, bëhet i paaktivuar nëse statusi është "Canceled" */}
                     <button
                       className={`btn btn-sm ${
                         schedule.status === 'Completed' ? 'btn-warning' : 'btn-primary'

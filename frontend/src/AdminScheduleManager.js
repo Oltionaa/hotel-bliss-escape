@@ -7,7 +7,9 @@ function AdminScheduleManager() {
     const [receptionistSchedules, setReceptionistSchedules] = useState([]);
     const [cleanerSchedules, setCleanerSchedules] = useState([]);
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loadingReceptionist, setLoadingReceptionist] = useState(true);
+    const [loadingCleaner, setLoadingCleaner] = useState(true);
+    const [loadingUsers, setLoadingUsers] = useState(true);
     const [error, setError] = useState(null);
     const [message, setMessage] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -23,90 +25,95 @@ function AdminScheduleManager() {
     });
 
     const location = useLocation();
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
     const authToken = location.state?.authToken || localStorage.getItem('token');
 
-    // Funksion ndihmës për të formatuar orën për input type="time"
     const formatTimeForInput = (dateTimeString) => {
         if (!dateTimeString) return '';
-
-        // Kontrollo nëse stringu është në formatin 'YYYY-MM-DD HH:mm:ss' (me hapësirë)
         if (dateTimeString.includes(' ')) {
-            return dateTimeString.substring(11, 16); // Merr HH:mm
+            return dateTimeString.substring(11, 16);
         }
-        // Kontrollo nëse stringu është në formatin ISO 8601 'YYYY-MM-DDTHH:mm:ss.sssZ' (me 'T')
         if (dateTimeString.includes('T')) {
-            return dateTimeString.split('T')[1].substring(0, 5); // Merr HH:mm pas 'T'
+            return dateTimeString.split('T')[1].substring(0, 5);
         }
-        // Nëse stringu është vetëm 'HH:mm:ss' ose 'HH:mm'
-        return dateTimeString.substring(0, 5); // Merr HH:mm
+        return dateTimeString.substring(0, 5);
     };
 
-    const fetchData = useCallback(async () => {
+    // handleFetchError correctly includes navigate because it uses it.
+    const handleFetchError = useCallback((err) => {
+        if (err.response?.status === 401) {
+            setError('Sesioni juaj ka skaduar. Ju lutem kyçuni sërish.');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('userType');
+            navigate('/login', { replace: true });
+        } else if (err.response?.status === 403) {
+            setError('Nuk keni leje për të parë këto të dhëna.');
+        } else {
+            setError(err.response?.data?.message || err.response?.data?.error || 'Gabim gjatë ngarkimit të të dhënave.');
+        }
+    }, [navigate]); // navigate dependency is correct here
+
+    // Removed navigate from here.
+    const fetchReceptionistSchedules = useCallback(async () => {
+        setLoadingReceptionist(true);
+        try {
+            await axios.get('http://localhost:8000/sanctum/csrf-cookie');
+            const res = await axios.get('http://localhost:8000/api/receptionist/schedules/all', {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+            setReceptionistSchedules(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            handleFetchError(err);
+        } finally {
+            setLoadingReceptionist(false);
+        }
+    }, [authToken, handleFetchError]); 
+
+    const fetchCleanerSchedules = useCallback(async () => {
+        setLoadingCleaner(true);
+        try {
+            const res = await axios.get('http://localhost:8000/api/cleaner/schedules/my', {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+            setCleanerSchedules(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            handleFetchError(err);
+        } finally {
+            setLoadingCleaner(false);
+        }
+    }, [authToken, handleFetchError]); // Corrected: removed navigate
+    const fetchUsers = useCallback(async () => {
+        setLoadingUsers(true);
+        try {
+            const res = await axios.get('http://localhost:8000/api/admin/users', {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+            const usersData = Array.isArray(res.data) ? res.data : [];
+            setUsers(usersData.filter(user => ['receptionist', 'cleaner'].includes(user.role)));
+        } catch (err) {
+            handleFetchError(err);
+        } finally {
+            setLoadingUsers(false);
+        }
+    }, [authToken, handleFetchError]); 
+
+
+    useEffect(() => {
         if (!authToken) {
             setError('Ju lutem kyçuni për të vazhduar.');
             localStorage.removeItem('token');
             localStorage.removeItem('user_id');
             localStorage.removeItem('userType');
             navigate('/login', { replace: true });
-            setLoading(false);
             return;
         }
 
-        setLoading(true);
-        setError(null);
+        fetchReceptionistSchedules();
+        fetchCleanerSchedules();
+        fetchUsers();
+    }, [authToken, navigate, fetchReceptionistSchedules, fetchCleanerSchedules, fetchUsers]);
 
-        try {
-            await axios.get('http://localhost:8000/sanctum/csrf-cookie');
-            const [receptionistRes, cleanerRes, usersRes] = await Promise.all([
-                axios.get('http://localhost:8000/api/receptionist/schedules/all', {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                }),
-                axios.get('http://localhost:8000/api/cleaner/schedules/my', {
-                    // Kjo API duhet të jetë gjithashtu 'all' nëse doni të shihni të gjitha oraret e pastruesve si admin
-                    // ose duhet të krijohet një endpoint i ri si p.sh. '/api/admin/cleaner/schedules/all'
-                    headers: { Authorization: `Bearer ${authToken}` },
-                }),
-                axios.get('http://localhost:8000/api/admin/users', {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                }),
-            ]);
-
-            console.log('usersRes.data:', JSON.stringify(usersRes.data, null, 2));
-            console.log('receptionistRes.data:', receptionistRes.data);
-            console.log('cleanerRes.data:', cleanerRes.data);
-
-            // KËTU ËSHTË NDERHYRJA KRYESORE!
-            // Bazuar në console.log të dhënë, usersRes.data është direkt array-i me përdorues.
-            const usersData = Array.isArray(usersRes.data)
-                ? usersRes.data
-                : [];
-
-            setReceptionistSchedules(Array.isArray(receptionistRes.data) ? receptionistRes.data : []);
-            setCleanerSchedules(Array.isArray(cleanerRes.data) ? cleanerRes.data : []);
-            // Filtrimi siguron që vetëm recepsionistët dhe pastruesit shfaqen në dropdown.
-            setUsers(usersData.filter(user => ['receptionist', 'cleaner'].includes(user.role)));
-        } catch (err) {
-            console.error('Gabim gjatë ngarkimit të të dhënave:', err);
-            if (err.response?.status === 401) {
-                setError('Sesioni juaj ka skaduar. Ju lutem kyçuni sërish.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('userType');
-                navigate('/login', { replace: true });
-            } else if (err.response?.status === 403) {
-                setError('Nuk keni leje për të parë këto të dhëna.');
-            } else {
-                setError(err.response?.data?.message || err.response?.data?.error || 'Gabim gjatë ngarkimit të të dhënave.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, [authToken, navigate]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -118,8 +125,6 @@ function AdminScheduleManager() {
             setIsEditing(true);
             setCurrentSchedule(schedule);
             setFormData({
-                // Kur modifikojmë, user_id nuk duhet të ndryshohet ose të shfaqet si zgjedhje.
-                // Megjithatë, mund ta mbajmë në state për referencë në API call.
                 user_id: String(schedule.receptionist_id || schedule.cleaner_id || ''),
                 work_date: schedule.work_date ? schedule.work_date.split('T')[0] : '',
                 shift_start: schedule.shift_start ? formatTimeForInput(schedule.shift_start) : '',
@@ -131,7 +136,7 @@ function AdminScheduleManager() {
             setIsEditing(false);
             setCurrentSchedule(null);
             setFormData({
-                user_id: '', // Bosh kur krijojmë të re
+                user_id: '',
                 work_date: '',
                 shift_start: '',
                 shift_end: '',
@@ -151,8 +156,6 @@ function AdminScheduleManager() {
             setError('Orari i zgjedhur është i pavlefshëm.');
             return;
         }
-
-        // Kjo kontroll do të ekzekutohet vetëm kur krijojmë orar të ri
         if (!isEditing && !formData.user_id) {
             setError('Ju lutem zgjidhni një përdorues.');
             return;
@@ -167,8 +170,6 @@ function AdminScheduleManager() {
                 : `http://localhost:8000/api/admin/cleaner/schedules`;
 
         const data = {
-            // Për krijim, user_id është thelbësor. Për modifikim, shpesh nuk është i nevojshëm
-            // në body, por nuk dëmton nëse API e lejon si 'sometimes'.
             [formData.type === 'receptionist' ? 'receptionist_id' : 'cleaner_id']: formData.user_id,
             work_date: formData.work_date,
             shift_start: formData.shift_start,
@@ -177,7 +178,6 @@ function AdminScheduleManager() {
         };
 
         try {
-            console.log('Dërgohet kërkesa:', { method: isEditing ? 'PUT' : 'POST', url, data });
             const response = await axios({
                 method: isEditing ? 'PUT' : 'POST',
                 url,
@@ -204,9 +204,12 @@ function AdminScheduleManager() {
             }
             setMessage(response.data.message || 'Orari u ruajt me sukses.');
             setShowModal(false);
-            fetchData(); // Rifresko të dhënat pas një ndryshimi të suksesshëm
+            if (formData.type === 'receptionist') {
+                fetchReceptionistSchedules();
+            } else {
+                fetchCleanerSchedules();
+            }
         } catch (err) {
-            console.error('Gabim gjatë ruajtjes së orarit:', err);
             if (err.response?.status === 401) {
                 setError('Sesioni juaj ka skaduar. Ju lutem kyçuni sërish.');
                 localStorage.removeItem('token');
@@ -220,7 +223,7 @@ function AdminScheduleManager() {
             } else if (err.response?.status === 422) {
                 setError(err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : 'Të dhënat e dhëna janë të pavlefshme. Kontrolloni fushat.');
             } else if (err.response?.status === 409) {
-                 setError(err.response?.data?.message || 'Orari për këtë përdorues dhe datë ekziston tashmë.');
+                setError(err.response?.data?.message || 'Orari për këtë përdorues dhe datë ekziston tashmë.');
             }
             else {
                 setError(err.response?.data?.message || err.response?.data?.error || 'Gabim gjatë ruajtjes së orarit.');
@@ -236,8 +239,6 @@ function AdminScheduleManager() {
             day: '2-digit',
         });
     };
-
-    // Ky formatTime është vetëm për shfaqje në tabelë
     const formatTime = (timeString) => {
         if (!timeString) return 'N/A';
         if (timeString.includes('T')) {
@@ -249,7 +250,7 @@ function AdminScheduleManager() {
         return timeString.substring(0, 5);
     };
 
-    if (loading) return <p>Duke ngarkuar...</p>;
+    if (loadingReceptionist && loadingCleaner && loadingUsers) return <p>Duke ngarkuar...</p>;
 
     return (
         <div className="container mt-4">
@@ -280,9 +281,13 @@ function AdminScheduleManager() {
                         </tr>
                     </thead>
                     <tbody>
-                        {receptionistSchedules.length === 0 ? (
+                        {loadingReceptionist ? (
                             <tr>
-                                <td colSpan={6}>Nuk ka orare.</td>
+                                <td colSpan={6}>Duke ngarkuar oraret e recepsionistëve...</td>
+                            </tr>
+                        ) : receptionistSchedules.length === 0 ? (
+                            <tr>
+                                <td colSpan={6}>Nuk ka orare për recepsionistë.</td>
                             </tr>
                         ) : (
                             receptionistSchedules.map(schedule => (
@@ -297,8 +302,8 @@ function AdminScheduleManager() {
                                                 schedule.status === 'Planned'
                                                     ? 'bg-info text-dark'
                                                     : schedule.status === 'Completed'
-                                                        ? 'bg-success'
-                                                        : 'bg-danger'
+                                                    ? 'bg-success'
+                                                    : 'bg-danger'
                                             }`}
                                         >
                                             {schedule.status}
@@ -334,9 +339,13 @@ function AdminScheduleManager() {
                         </tr>
                     </thead>
                     <tbody>
-                        {cleanerSchedules.length === 0 ? (
+                        {loadingCleaner ? (
                             <tr>
-                                <td colSpan={6}>Nuk ka orare.</td>
+                                <td colSpan={6}>Duke ngarkuar oraret e pastruesve...</td>
+                            </tr>
+                        ) : cleanerSchedules.length === 0 ? (
+                            <tr>
+                                <td colSpan={6}>Nuk ka orare për pastrues.</td>
                             </tr>
                         ) : (
                             cleanerSchedules.map(schedule => (
@@ -351,8 +360,8 @@ function AdminScheduleManager() {
                                                 schedule.status === 'Planned'
                                                     ? 'bg-info text-dark'
                                                     : schedule.status === 'Completed'
-                                                        ? 'bg-success'
-                                                        : 'bg-danger'
+                                                    ? 'bg-success'
+                                                    : 'bg-danger'
                                             }`}
                                         >
                                             {schedule.status}
@@ -386,14 +395,13 @@ function AdminScheduleManager() {
                                 name="type"
                                 value={formData.type}
                                 onChange={handleInputChange}
-                                disabled={isEditing} // Kur modifikojmë, nuk e ndryshojmë llojin (receptionist/cleaner)
+                                disabled={isEditing}
                             >
                                 <option value="receptionist">Recepsionist</option>
                                 <option value="cleaner">Pastrues</option>
                             </Form.Select>
                         </Form.Group>
 
-                        {/* Kjo pjesë shfaqet vetëm kur NUK jemi në modalin e modifikimit */}
                         {!isEditing && (
                             <Form.Group className="mb-3">
                                 <Form.Label>{formData.type === 'receptionist' ? 'Recepsionisti' : 'Pastruesi'}</Form.Label>
@@ -401,10 +409,12 @@ function AdminScheduleManager() {
                                     name="user_id"
                                     value={formData.user_id}
                                     onChange={handleInputChange}
-                                    required // Kjo bën që fusha të jetë e detyrueshme vetëm kur shfaqet
+                                    required
                                 >
                                     <option value="">Zgjidhni një {formData.type === 'receptionist' ? 'recepsionist' : 'pastrues'}</option>
-                                    {users
+                                    {loadingUsers ? (
+                                        <option disabled>Duke ngarkuar përdoruesit...</option>
+                                    ) : users
                                         .filter(user => user.role === formData.type)
                                         .map(user => (
                                             <option key={user.id} value={user.id}>

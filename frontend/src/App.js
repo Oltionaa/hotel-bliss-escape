@@ -96,18 +96,16 @@ function App() {
   const AdminRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    // Konfirmo që tokeni ekziston dhe roli është 'admin'
     if (!token || userType !== 'admin') {
       console.log('AdminRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
     }
-    return <Outlet />; // Shfaq komponentin fëmijë (dashboard-in, etj.)
+    return <Outlet />; 
   };
 
   const ReceptionistRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    // Konfirmo që tokeni ekziston dhe roli është 'receptionist'
     if (!token || userType !== 'receptionist') {
       console.log('ReceptionistRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
@@ -118,7 +116,6 @@ function App() {
   const CleanerRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    // Konfirmo që tokeni ekziston dhe roli është 'cleaner'
     if (!token || userType !== 'cleaner') {
       console.log('CleanerRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
@@ -129,7 +126,6 @@ function App() {
   const UserRoute = () => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType')?.trim().toLowerCase();
-    // Konfirmo që tokeni ekziston dhe roli është 'user'
     if (!token || userType !== 'user') {
       console.log('UserRoute: Po ridrejtohet te /login - autorizim i dështuar');
       return <Navigate to="/login" replace />;
@@ -159,7 +155,7 @@ function App() {
               {rooms.length > 0 ? (
                 <div className="container py-5">
                   <h4 className="mb-4">
-                    Dhoma në dispozicion për {formData.date || 'N/A'} deri më{' '}
+                    Rooms available for  {formData.date || 'N/A'} until {' '}
                     {formData.checkOutDate || 'N/A'}
                   </h4>
                   <div className="row">
@@ -183,12 +179,12 @@ function App() {
                             </p>
                             <div className="d-flex justify-content-between text-muted mb-2">
                               <small>
-                                <i className="bi bi-fullscreen"></i> MADHËSIA{' '}
+                                <i className="bi bi-fullscreen"></i> SIZE{' '}
                                 {room.size || 'N/A'} m²
                               </small>
                               <small>
                                 <i className="bi bi-people"></i> MAX{' '}
-                                {room.capacity || 'N/A'} persona
+                                {room.capacity || 'N/A'} people
                               </small>
                             </div>
                             <p className="fw-bold">€{room.price || 'N/A'}</p>
@@ -196,7 +192,7 @@ function App() {
                               className="btn btn-dark w-100"
                               onClick={() => handleBookNow(room)}
                             >
-                              REZERVONI TANI
+                              BOOK NOW
                             </button>
                           </div>
                         </div>
@@ -206,7 +202,7 @@ function App() {
                 </div>
               ) : (
                 <div className="container py-5">
-                  <h4>Asnjë dhomë në dispozicion për kërkimin tuaj.</h4>
+                  <h4>No rooms available for your search.</h4>
                 </div>
               )}
               <RoomsAndSuites rooms={rooms} />
