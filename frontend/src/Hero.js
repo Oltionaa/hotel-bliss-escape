@@ -4,27 +4,43 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 function Hero() {
   const [userType, setUserType] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Gjendja për statusin e kyçjes
 
   useEffect(() => {
-    // Merr llojin e përdoruesit nga localStorage
-    const updateUserType = () => {
+    const updateUserStatus = () => {
       const storedUserType = localStorage.getItem('userType');
-      const authToken = localStorage.getItem('authToken');
-      console.log('Hero: userType:', storedUserType, 'authToken:', authToken);
-      setUserType(storedUserType ? storedUserType.trim().toLowerCase() : null);
+      const authToken = localStorage.getItem('token'); // Kontrollojmë edhe authToken-in!
+
+      console.log('Hero (useEffect): Checking status...');
+      console.log('  storedUserType:', storedUserType);
+      console.log('  authToken:', authToken);
+
+      // Përditësojmë userType dhe isLoggedIn bazuar në praninë e authToken
+      if (authToken) {
+        // Përdoruesi është i kyçur nëse ka token
+        setUserType(storedUserType ? storedUserType.trim().toLowerCase() : null);
+        setIsLoggedIn(true);
+        console.log('  Status: Logged In as', storedUserType);
+      } else {
+        // Nëse nuk ka authToken, përdoruesi nuk është i kyçur
+        setUserType(null);
+        setIsLoggedIn(false);
+        console.log('  Status: Not Logged In');
+      }
     };
 
-    // Thirr fillimisht
-    updateUserType();
+    // Thirr funksionin menjëherë kur komponenti montohet
+    updateUserStatus();
 
-    // Dëgjo ndryshimet në localStorage
-    window.addEventListener('storage', updateUserType);
+    // Dëgjo ndryshimet në localStorage. Kjo siguron që komponenti të reagojë
+    // nëse token-i fshihet ose shtohet nga një komponent tjetër (p.sh., nga Login ose Logout)
+    window.addEventListener('storage', updateUserStatus);
 
-    // Pastro event listener kur komponenti çmontohet
+    // Pastro event listener kur komponenti çmontohet për të parandaluar rrjedhjet e memories
     return () => {
-      window.removeEventListener('storage', updateUserType);
+      window.removeEventListener('storage', updateUserStatus);
     };
-  }, []);
+  }, []); // Varet nga asgjë, kështu që ekzekutohet vetëm një herë pas montimit inicial
 
   return (
     <div
@@ -50,26 +66,35 @@ function Hero() {
             See Our Rooms
           </Link>
 
-          {/* Shfaq button-in për cleaner */}
-          {userType === 'cleaner' && (
-            <Link to="/cleaner-dashboard" className="btn btn-outline-light">
-              Cleaner Dashboard
-            </Link>
+          {/* Këtu lëmë VETËM butonat e dashboard-it NËSE jemi të kyçur */}
+          {isLoggedIn && (
+            <>
+              {userType === 'cleaner' && (
+                <Link to="/cleaner-dashboard" className="btn btn-outline-light">
+                  Cleaner Dashboard
+                </Link>
+              )}
+
+              {userType === 'receptionist' && (
+                <Link to="/receptionist-dashboard" className="btn btn-outline-light">
+                  Receptionist Dashboard
+                </Link>
+              )}
+
+              {userType === 'admin' && (
+                <Link to="/admin-dashboard" className="btn btn-outline-light">
+                  Admin Dashboard
+                </Link>
+              )}
+            </>
           )}
 
-          {/* Shfaq button-in për recepsionist */}
-          {userType === 'receptionist' && (
-            <Link to="/receptionist-dashboard" className="btn btn-outline-light">
-              Receptionist Dashboard
+          {/* Ky është blloku që heqim: */}
+          {/* {!isLoggedIn && (
+            <Link to="/login" className="btn btn-outline-light">
+              Login
             </Link>
-          )}
-
-          {/* Shfaq button-in për admin */}
-          {userType === 'admin' && (
-            <Link to="/admin-dashboard" className="btn btn-outline-light">
-              Admin Dashboard
-            </Link>
-          )}
+          )} */}
         </div>
       </div>
     </div>
